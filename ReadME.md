@@ -44,31 +44,6 @@ The goal is to ensure the chatbot returns **accurate, semantically correct answe
 
 ---
 
-## Project Structure
-
-* `src/
-* ├── main/
-* │   ├── java/
-* │   │   ├── pages/
-* │   │   │   └── GovGptPage.java
-* │   │   ├── utils/
-* │   │   │   ├── EmbeddingService.java
-* │   │   │   ├── InMemoryVectorStore.java
-* │   │   │   ├── SemanticComparer.java
-* │   │   │   ├── VectorStore.java
-* │   │   │   ├── TestCase.java
-* │   │   │   ├── JsonDataReader.java
-* │   │   │   └── VectorUtils.java
-* │   │   └── common/
-* │   │       └── TestBase.java
-* ├── test/
-* │   └── resources/
-* │       └── testData.json
-* ├── build.gradle
-* └── settings.gradle`
-
----
-
 ## Prerequisites
 
 - Java 17+
@@ -91,19 +66,26 @@ The goal is to ensure the chatbot returns **accurate, semantically correct answe
 ## Configuration
  `src/test/resources/config.properties`
 
+---
+
 ## Running test
 `./gradlew test `
 
+---
 ## Test Data
 -	Test cases are loaded from testData.json.
 -	Each test case executes as a separate TestNG test via a data provider.
 
+---
 ## Extent Spark Reports
 -	HTML report: reports/semantic-report_<timestamp>.html
 -	Screenshots captured only on failures in screenshots/.
 
+---
 ## Keynotes
 -	EmbeddingService uses ai.djl.huggingface:tokenizers
 -	GovGPTSemanticTest runs all JSON test cases dynamically.
 -	Screenshots and logs are captured only on failures.
 -	Framework is designed for scalability and reusability.
+
+---
