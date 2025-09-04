@@ -46,22 +46,26 @@ The goal is to ensure the chatbot returns **accurate, semantically correct answe
 
 ## Project Structure
 
-/src/main/java
-├── pages/
-│   └── GovGptPage.java             # Page Object for chatbot UI
-├── utils/
-│   ├── EmbeddingService.java       # Embedding generation via DJL + PyTorch
-│   ├── InMemoryVectorStore.java    # Stores embeddings for reference answers
-│   ├── SemanticComparer.java       # Compares semantic similarity
-│   ├── VectorStore.java            # Interface for vector storage
-│   ├── TestCase.java               # Test case POJO
-│   ├── JsonDataReader.java         # Reads test cases from JSON
-│   └── VectorUtils.java            # Cosine similarity utility
-└── common/
-└── TestBase.java               # Base class for WebDriver setup, reports, screenshots
-
-/src/test/resources
-└── testData.json                   # JSON file containing Q&A test cases
+* `src/
+* ├── main/
+* │   ├── java/
+* │   │   ├── pages/
+* │   │   │   └── GovGptPage.java
+* │   │   ├── utils/
+* │   │   │   ├── EmbeddingService.java
+* │   │   │   ├── InMemoryVectorStore.java
+* │   │   │   ├── SemanticComparer.java
+* │   │   │   ├── VectorStore.java
+* │   │   │   ├── TestCase.java
+* │   │   │   ├── JsonDataReader.java
+* │   │   │   └── VectorUtils.java
+* │   │   └── common/
+* │   │       └── TestBase.java
+* ├── test/
+* │   └── resources/
+* │       └── testData.json
+* ├── build.gradle
+* └── settings.gradle`
 
 ---
 
