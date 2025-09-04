@@ -1,0 +1,52 @@
+[
+  {
+    "id": "tc01",
+    "question": "What is the process to get a driving license in UAE?",
+    "referenceAnswer": "Enroll in an approved driving school, complete theory and practical lessons, pass the RTA knowledge and road tests, and obtain the UAE driving license."
+  },
+  {
+    "id": "tc02",
+    "question": "What are the steps to get a golden visa in UAE?",
+    "referenceAnswer": "Golden Visa eligibility includes investors, entrepreneurs, specialized talents, and researchers. Apply through ICA or GDRFA portals, submit required documents, and meet the eligibility criteria for long-term residency."
+  },
+  {
+    "id": "tc03",
+    "question": "Tell me the 2030 vision of UAE government.",
+    "referenceAnswer": "UAE Vision 2030 prioritizes sustainable development, a knowledge-based economy, innovation, renewable energy, and improved quality of life for citizens and residents."
+  },
+  {
+    "id": "tc04",
+    "question": "How to apply for Emirates ID in UAE?",
+    "referenceAnswer": "Apply online through the Federal Authority for Identity and Citizenship portal or visit typing centers. Submit required documents, biometric data, and pay fees to obtain Emirates ID."
+  },
+  {
+    "id": "tc05",
+    "question": "What is the procedure for UAE residence visa renewal?",
+    "referenceAnswer": "Renew your residence visa online via ICA or GDRFA, submit required documents, pay the fees, and complete any medical tests if needed."
+  },
+  {
+    "id": "tc06",
+    "question": "How can I start a business in Dubai free zone?",
+    "referenceAnswer": "Select a free zone, choose a business activity, submit required documents, pay fees, and obtain trade license and permits to start your business."
+  },
+  {
+    "id": "tc07",
+    "question": "What are the requirements for UAE labor card?",
+    "referenceAnswer": "Labor card is issued after employment visa approval. Employer submits documents to Ministry of Human Resources and Emiratisation (MOHRE) and receives the labor card."
+  },
+  {
+    "id": "tc08",
+    "question": "How to register a vehicle in Abu Dhabi?",
+    "referenceAnswer": "Visit the Abu Dhabi Police or the registered service centers, submit vehicle documents, insurance, and fees, and complete vehicle registration."
+  },
+  {
+    "id": "tc09",
+    "question": "How to get health insurance in UAE?",
+    "referenceAnswer": "Purchase mandatory health insurance from approved providers or through employer. Ensure coverage meets DHA/HAAD requirements and submit for activation."
+  },
+  {
+    "id": "tc10",
+    "question": "How to obtain a marriage certificate in UAE?",
+    "referenceAnswer": "Submit required documents to the local court or Sharia court, complete the marriage registration process, and obtain an official marriage certificate."
+  }
+]
