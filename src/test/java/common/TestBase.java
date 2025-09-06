@@ -33,7 +33,7 @@ public class TestBase {
     public static ExtentTest test;
 
     private static final String dt = new SimpleDateFormat("dd-MM-yyyy_HH-mm-ss").format(new Date());
-    public static final String REPORT_PATH = "reports/Qa_GovBot_Analytics_Report" + dt + ".html";
+    public static final String REPORT_PATH = "reports/Qa_GovBot_Analytics_Report_" + dt + ".html";
     private static final String JSON_ARCHIVE = "target/json/jsonArchive.json";
 
     @BeforeSuite(alwaysRun = true)
