@@ -9,9 +9,7 @@ public class LoginTest extends TestBase {
 
     @Test
     public void tc00VerifyAppURL() {
-        test = extent.createTest("Verify App URL", "Open Chatbot link").assignCategory("Functional_TestCase");
         log.info("Verify Chatbot Application URL");
-
         String url = properties.getProperty("app.url");
         openURL(url);
         test.log(Status.INFO, "Verify URL");
@@ -20,7 +18,6 @@ public class LoginTest extends TestBase {
 
     @Test
     public void tc01VerifyAppLogin() {
-        test = extent.createTest("Verify App Login", "Login with Valid Credentials").assignCategory("Functional_TestCase");
         log.info("Verify Login");
 
         String email = properties.getProperty("app.email");
