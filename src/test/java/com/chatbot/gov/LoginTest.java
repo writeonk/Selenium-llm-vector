@@ -7,20 +7,17 @@ import pages.LoginPage;
 
 public class LoginTest extends TestBase {
 
-    @Test
-    public void tc00VerifyAppURL() {
-        test = extent.createTest("Verify App URL", "Open Chatbot link").assignCategory("Functional_TestCase");
+    @Test(priority = 1)
+    public void VerifyAppURL() {
         log.info("Verify Chatbot Application URL");
-
         String url = properties.getProperty("app.url");
         openURL(url);
         test.log(Status.INFO, "Verify URL");
         log.info("Verify URL");
     }
 
-    @Test
-    public void tc01VerifyAppLogin() {
-        test = extent.createTest("Verify App Login", "Login with Valid Credentials").assignCategory("Functional_TestCase");
+    @Test(priority = 2)
+    public void VerifyAppLogin() {
         log.info("Verify Login");
 
         String email = properties.getProperty("app.email");
