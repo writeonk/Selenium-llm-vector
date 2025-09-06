@@ -1,36 +1,53 @@
 package utils;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * In-memory implementation of VectorStore.
+ * Ideal for testing or small-scale production scenarios.
+ */
 public class InMemoryVectorStore implements VectorStore {
 
-    private static final Logger logger = LogManager.getLogger(InMemoryVectorStore.class);
-
-    private final Map<String, float[]> vectors = new ConcurrentHashMap<>();
-    private final Map<String, String> referenceMap = new ConcurrentHashMap<>();
+    private final Map<String, float[]> vectors = new HashMap<>();
+    private final Map<String, Map<String, Object>> metadataMap = new HashMap<>();
 
     @Override
-    public void upsert(String id, float[] vector, Map<String, Object> payload) {
+    public void upsert(String id, float[] vector, Map<String, Object> metadata) {
+        if (id == null || vector == null) {
+            throw new IllegalArgumentException("Vector ID and vector must not be null.");
+        }
         vectors.put(id, vector);
-        referenceMap.put(id, (String) payload.getOrDefault("referenceAnswer", payload.get("question")));
-        logger.info("Vector upserted for id: {}", id);
+        metadataMap.put(id, metadata != null ? metadata : Map.of());
     }
 
     @Override
-    public List<VectorStore.ScoredReference> search(float[] query, int k) {
-        List<VectorStore.ScoredReference> results = vectors.entrySet().stream()
-                .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), EmbeddingService.cosine(e.getValue(), query)))
-                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
-                .limit(k)
-                .map(e -> new VectorStore.ScoredReference(e.getKey(), e.getValue(), referenceMap.get(e.getKey())))
-                .collect(Collectors.toList());
+    public List<SearchResult> search(float[] queryVector, int topK) {
+        if (queryVector == null || topK <= 0) return List.of();
 
-        logger.info("Search returned {} results.", results.size());
-        return results;
+        return vectors.entrySet().stream()
+                .map(e -> new SearchResult(
+                        e.getKey(),
+                        cosineSimilarity(queryVector, e.getValue()),
+                        metadataMap.get(e.getKey())
+                ))
+                .sorted((a, b) -> Float.compare(b.similarity, a.similarity))
+                .limit(topK)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Cosine similarity between two vectors with numerical stability.
+     */
+    private float cosineSimilarity(float[] vecA, float[] vecB) {
+        if (vecA.length != vecB.length) return 0f;
+
+        float dot = 0f, normA = 0f, normB = 0f;
+        for (int i = 0; i < vecA.length; i++) {
+            dot += vecA[i] * vecB[i];
+            normA += vecA[i] * vecA[i];
+            normB += vecB[i] * vecB[i];
+        }
+        return (float) (dot / (Math.sqrt(normA) * Math.sqrt(normB) + 1e-10));
     }
 }

@@ -1,6 +1,7 @@
 package common;
 
 import com.aventstack.extentreports.*;
+import com.aventstack.extentreports.markuputils.*;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import com.aventstack.extentreports.reporter.JsonFormatter;
 import com.aventstack.extentreports.reporter.configuration.Theme;
@@ -14,7 +15,9 @@ import org.openqa.selenium.safari.SafariDriver;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
 
-import java.io.*;
+import java.io.FileReader;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.*;
 import java.text.SimpleDateFormat;
@@ -26,21 +29,21 @@ public class TestBase {
 
     public static Properties properties;
     public static WebDriver driver;
-
     protected static final Logger log = LogManager.getLogger(TestBase.class);
-
     public static ExtentReports extent;
     public static ExtentTest test;
 
     private static final String dt = new SimpleDateFormat("dd-MM-yyyy_HH-mm-ss").format(new Date());
     public static final String REPORT_PATH = "reports/Qa_GovBot_Analytics_Report_" + dt + ".html";
     private static final String JSON_ARCHIVE = "target/json/jsonArchive.json";
+    private static final String SCREENSHOT_DIR = System.getProperty("user.dir") + "/reports/screenshots/";
 
     @BeforeSuite(alwaysRun = true)
     public void setUpSuite() throws IOException {
         loadProperties();
         initExtentReport();
         launchBrowser();
+        Files.createDirectories(Paths.get(SCREENSHOT_DIR));
     }
 
     @BeforeMethod(alwaysRun = true)
@@ -54,22 +57,26 @@ public class TestBase {
     @AfterMethod(alwaysRun = true)
     public void captureResult(ITestResult result) {
         if (test == null) return;
-
+        String testName = result.getName();
         try {
-            String testName = result.getName();
-            if (result.getStatus() == ITestResult.FAILURE) {
-                String screenshotPath = captureScreenshot(driver, testName);
-                log.error("Test FAILED: {} | Reason: {}", testName, result.getThrowable().getMessage());
-                test.fail("Test case FAILED: " + testName,
-                        MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
+            switch (result.getStatus()) {
+                case ITestResult.FAILURE:
+                    String screenshotPath = captureScreenshot(driver, testName);
+                    log.error("Test FAILED: {} | Reason: {}", testName, result.getThrowable().getMessage());
 
-            } else if (result.getStatus() == ITestResult.SKIP) {
-                log.warn("Test SKIPPED: {}", testName);
-                test.skip("Test case SKIPPED: " + testName);
+                    test.fail(MarkupHelper.createLabel("<span class='badge badge-danger'>FAIL</span> | " + testName, ExtentColor.RED));
+                    test.fail(MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
+                    break;
 
-            } else if (result.getStatus() == ITestResult.SUCCESS) {
-                log.info("Test PASSED: {}", testName);
-                test.pass("Test case PASSED: " + testName);
+                case ITestResult.SKIP:
+                    log.warn("Test SKIPPED: {}", testName);
+                    test.skip(MarkupHelper.createLabel("<span class='badge badge-warning'>SKIP</span> | " + testName, ExtentColor.ORANGE));
+                    break;
+
+                case ITestResult.SUCCESS:
+                    log.info("Test PASSED: {}", testName);
+                    test.pass(MarkupHelper.createLabel("<span class='badge badge-success'>PASS</span> | " + testName, ExtentColor.GREEN));
+                    break;
             }
         } catch (Exception e) {
             log.error("Error while logging test result", e);
@@ -93,7 +100,7 @@ public class TestBase {
             properties = new Properties();
             properties.load(reader);
             log.info("Config properties loaded successfully.");
-        } catch (FileNotFoundException ex) {
+        } catch (IOException ex) {
             log.error("Config file not found!", ex);
         }
     }
@@ -111,8 +118,8 @@ public class TestBase {
             extent.setSystemInfo("Environment", properties.getProperty("Environment", "QA"));
         }
 
-        spark.config().setDocumentTitle("Chatbot Automation Report");
-        spark.config().setReportName("Semantic + UI Validation Suite");
+        spark.config().setDocumentTitle("GovGPT Automation Report");
+        spark.config().setReportName("Semantic + UI + Accessibility Validation Suite");
         spark.config().setTheme(Theme.STANDARD);
         spark.config().setTimelineEnabled(true);
         spark.config().setOfflineMode(true);
@@ -159,11 +166,11 @@ public class TestBase {
     }
 
     public String captureScreenshot(WebDriver driver, String screenshotName) {
-        String path = System.getProperty("user.dir") + "/screenshots/" + screenshotName + ".png";
+        String path = SCREENSHOT_DIR + screenshotName + ".png";
         try {
             if (driver != null) {
                 File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-                Files.createDirectories(Paths.get(System.getProperty("user.dir") + "/screenshots/"));
+                Files.createDirectories(Paths.get(SCREENSHOT_DIR));
                 Files.copy(screenshot.toPath(), Paths.get(path), StandardCopyOption.REPLACE_EXISTING);
                 log.info("Screenshot captured: {}", path);
             }
@@ -180,5 +187,13 @@ public class TestBase {
         } else {
             log.error("Driver is null. Cannot open URL: {}", url);
         }
+    }
+
+    // Additional helper for world-class dashboard: structured category + severity
+    public void logTestDetails(String category, String severity, String message) {
+        ExtentColor color = ExtentColor.BLUE;
+        if ("warn".equalsIgnoreCase(severity)) color = ExtentColor.ORANGE;
+        else if ("fail".equalsIgnoreCase(severity)) color = ExtentColor.RED;
+        test.log(Status.INFO, MarkupHelper.createLabel(category + " | " + message, color));
     }
 }

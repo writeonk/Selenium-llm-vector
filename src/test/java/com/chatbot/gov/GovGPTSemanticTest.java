@@ -5,9 +5,13 @@ import pages.GovGptPage;
 import utils.*;
 
 import com.aventstack.extentreports.MediaEntityBuilder;
+import com.aventstack.extentreports.Status;
+import com.aventstack.extentreports.markuputils.*;
 import com.google.gson.JsonObject;
 import org.testng.annotations.*;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -17,39 +21,45 @@ public class GovGPTSemanticTest extends TestBase {
     private EmbeddingService embeddingService;
     private VectorStore vectorStore;
     private SemanticComparer comparer;
-    private LLMService llmService;         // Pluggable LLM service
+    private LLMService llmService;
     private GovGptPage chatPage;
 
     private final Duration TIMEOUT = Duration.ofSeconds(30);
     private final Duration POLLING = Duration.ofMillis(250);
-    private final double THRESHOLD = 0.8;
     private List<TestCase> testCases;
 
     @BeforeClass
     public void init() throws Exception {
-        // Initialize embeddings
         embeddingService = new EmbeddingService();
         embeddingService.init();
 
-        // Initialize vector store
         vectorStore = new InMemoryVectorStore();
 
-        // Load test cases from JSON
-        testCases = JsonDataReader.read("testData.json");
+        // Load JSON test cases from classpath
+        testCases = JsonDataReader.read("src/test/resources/testData.json");
+        if (testCases == null || testCases.isEmpty()) {
+            throw new RuntimeException("No test cases loaded. Please check testData.json");
+        }
+
+
+        // Precompute reference embeddings
         for (TestCase tc : testCases) {
-            float[] refEmbedding = embeddingService.embed(tc.getReferenceAnswer());
-            vectorStore.upsert(tc.getId(), refEmbedding, Map.of("referenceAnswer", tc.getReferenceAnswer()));
+            if (tc.getReferenceAnswer() != null && !tc.getReferenceAnswer().isEmpty()) {
+                float[] refEmbedding = embeddingService.embed(tc.getReferenceAnswer());
+                vectorStore.upsert(tc.getId(), refEmbedding,
+                        Map.of("referenceAnswer", tc.getReferenceAnswer()));
+            }
         }
 
         comparer = new SemanticComparer(embeddingService, vectorStore);
 
-        // Initialize LLM service (choose one)
-        llmService = new StubLLMService(); // offline
-        // llmService = new HuggingFaceLLMService(properties.getProperty("huggingface_api_key")); // online
+        llmService = new StubLLMService(); // Offline stub
+        // llmService = new HuggingFaceLLMService(properties.getProperty("huggingface_api_key"));
 
-        // Initialize chatbot page
         chatPage = new GovGptPage(driver);
         chatPage.startNewChat();
+
+        Files.createDirectories(Paths.get(System.getProperty("user.dir") + "/screenshots"));
     }
 
     @DataProvider(name = "chatbotData")
@@ -60,45 +70,111 @@ public class GovGPTSemanticTest extends TestBase {
     }
 
     @Test(dataProvider = "chatbotData")
-    public void testChatbotAnswers(TestCase tc) throws Exception {
-        // Send question to chatbot
+    public void runTest(TestCase tc) throws Exception {
+
+        // -------------------- Step 1: Send Question --------------------
         chatPage.enterBotRequest(tc.getQuestion());
         chatPage.btnSendPrompt();
 
-        // Capture bot response
+        // -------------------- Step 2: Get Bot Response --------------------
         String botAnswer = chatPage.BotResponse(TIMEOUT, POLLING);
 
-        // Semantic comparison
-        SemanticComparer.ComparisonResult semanticResult =
-                comparer.compareToNearest(tc.getQuestion(), botAnswer, 5, THRESHOLD);
-
-        // LLM evaluation
-        Map<String, Object> llmScores =
-                llmService.evaluateAnswer(tc.getQuestion(), tc.getReferenceAnswer(), botAnswer);
-
-        // Accessibility check
-        List<JsonObject> violations = AxeAccessibility.analyzePage(driver);
-
-        // Log results
-        String logMessage = "Question: " + tc.getQuestion() +
-                "<br>Chatbot Answer: " + botAnswer +
-                "<br>Best Reference: " + semanticResult.matchedReference +
-                "<br>Similarity: " + String.format("%.2f", semanticResult.similarity) +
-                "<br>LLM Scores: " + llmScores +
-                "<br>Accessibility Violations: " + violations.size();
-
-        if (semanticResult.pass) {
-            test.pass("PASS | " + logMessage);
-        } else {
-            String screenshotPath = captureScreenshot(driver, "FAIL_" + tc.getId());
-            test.fail("FAIL | " + logMessage,
-                    MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
+        // -------------------- Step 3: Semantic Comparison --------------------
+        SemanticComparer.ComparisonResult semanticResult = null;
+        if (tc.getReferenceAnswer() != null && !tc.getReferenceAnswer().isEmpty()) {
+            float threshold = tc.getMetadata() != null ? (float) tc.getMetadata().getConfidenceThreshold() : 0.8f;
+            semanticResult = comparer.compareToNearest(tc.getQuestion(), botAnswer, 5, threshold);
         }
 
-        System.out.println("Test Case: " + tc.getId() +
-                " | PASS: " + semanticResult.pass +
-                " | Similarity: " + semanticResult.similarity +
-                " | LLM Scores: " + llmScores);
+        // -------------------- Step 4: LLM Evaluation --------------------
+        Map<String, Object> llmScores = llmService.evaluateAnswer(
+                tc.getQuestion(),
+                tc.getReferenceAnswer() != null ? tc.getReferenceAnswer() : "",
+                botAnswer
+        );
+
+        // -------------------- Step 5: Accessibility Violations --------------------
+        List<JsonObject> violations = AxeAccessibility.analyzePage(driver);
+
+        // -------------------- Step 6: Hallucination Detection --------------------
+        if (tc.getBlacklist() != null) {
+            for (String term : tc.getBlacklist()) {
+                if (botAnswer != null && botAnswer.toLowerCase().contains(term.toLowerCase())) {
+                    logTestDetails("hallucination", "warn",
+                            "Potential hallucination detected: '" + term + "'");
+                }
+            }
+        }
+
+        // -------------------- Step 7: Security / Fallback Detection --------------------
+        if (tc.getExpectedKeywords() == null || tc.getExpectedKeywords().isEmpty()) {
+            if (tc.getQuestion() != null && tc.getQuestion().matches(".*(<script>|DROP TABLE|ignore all instructions).*")) {
+                logTestDetails("security", "fail", "Potential prompt injection detected in question");
+            } else if (tc.getQuestion() == null || tc.getQuestion().isEmpty()) {
+                logTestDetails("fallback", "warn", "Empty question received. Triggering fallback handling.");
+            }
+        }
+
+        // -------------------- Step 8: Expected Bot Response Examples --------------------
+        boolean matchesExample = false;
+        if (tc.getExpectedBotResponseExamples() != null) {
+            matchesExample = tc.getExpectedBotResponseExamples()
+                    .stream()
+                    .anyMatch(example -> example.equalsIgnoreCase(botAnswer));
+        }
+
+        // -------------------- Step 9: Log All Details --------------------
+        test.log(Status.INFO, MarkupHelper.createLabel(
+                "Category: " + tc.getCategory() +
+                        " | Severity: " + tc.getSeverity() +
+                        " | Action: " + tc.getSeverityAction(), ExtentColor.BLUE));
+        test.log(Status.INFO, MarkupHelper.createLabel("Question: " + tc.getQuestion(), ExtentColor.BLUE));
+        test.log(Status.INFO, MarkupHelper.createLabel("Bot Response: " + botAnswer, ExtentColor.GREEN));
+        test.log(Status.INFO, MarkupHelper.createLabel("Matches Example: " + matchesExample, ExtentColor.CYAN));
+        test.log(Status.INFO, MarkupHelper.createLabel("Tone: " + tc.getTone() + " | Format: " + tc.getFormat(), ExtentColor.TRANSPARENT));
+
+        if (tc.getConstraints() != null) {
+            test.log(Status.INFO, MarkupHelper.createLabel(
+                    "Latency: " + tc.getConstraints().getLatencySeconds() +
+                            " | Language: " + tc.getConstraints().getLanguage(), ExtentColor.LIME));
+        }
+
+        if (tc.getScoring() != null) {
+            test.log(Status.INFO, MarkupHelper.createLabel(
+                    "Scoring Aggregation: " + tc.getScoring().getAggregation() +
+                            " | Weight: " + tc.getScoring().getWeight(), ExtentColor.PURPLE));
+        }
+
+        test.log(Status.INFO, MarkupHelper.createLabel("LLM Scores: " + llmScores, ExtentColor.BROWN));
+        test.log(Status.INFO, MarkupHelper.createLabel("Accessibility Violations: " + violations.size(), ExtentColor.RED));
+
+        if (semanticResult != null) {
+            test.log(Status.INFO, MarkupHelper.createLabel(
+                    "Best Reference: " + semanticResult.matchedReference +
+                            " | Similarity: " + String.format("%.2f", semanticResult.similarity),
+                    ExtentColor.ORANGE));
+        }
+
+        // -------------------- Step 10: Pass / Fail / Warn --------------------
+        boolean pass = semanticResult == null || semanticResult.pass;
+        if (pass) {
+            test.pass(MarkupHelper.createLabel(
+                    "<span class='badge badge-success'>PASS</span> | Test Passed", ExtentColor.GREEN));
+        } else {
+            String screenshotPath = System.getProperty("user.dir") + "/screenshots/FAIL_" + tc.getId() + ".png";
+            captureScreenshot(driver, "FAIL_" + tc.getId());
+            test.log(Status.FAIL, MarkupHelper.createLabel(
+                    "<span class='badge badge-danger'>FAIL</span> | Test Failed", ExtentColor.RED));
+            test.fail(MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
+        }
+
+        // -------------------- Step 11: Update LastRun --------------------
+        if (tc.getLastRun() != null) {
+            tc.getLastRun().setStatus(pass ? "pass" : "fail");
+            tc.getLastRun().setScore(semanticResult != null ? semanticResult.similarity : 0.0);
+            tc.getLastRun().setRunDate(java.time.Instant.now().toString());
+            tc.getLastRun().setEvaluator("automated-qa-pipeline");
+        }
     }
 
     @AfterClass

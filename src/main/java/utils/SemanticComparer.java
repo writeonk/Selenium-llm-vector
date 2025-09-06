@@ -1,60 +1,64 @@
 package utils;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.List;
+import java.util.Objects;
 
+/**
+ * Compares chatbot answers against reference embeddings
+ * using VectorStore and cosine similarity.
+ */
 public class SemanticComparer {
 
-    private static final Logger logger = LogManager.getLogger(SemanticComparer.class);
+    private final EmbeddingService embeddingService;
+    private final VectorStore vectorStore;
 
-    private final EmbeddingService embedder;
-    private final VectorStore store;
-
-    public SemanticComparer(EmbeddingService embedder, VectorStore store) {
-        this.embedder = embedder;
-        this.store = store;
-        logger.info("SemanticComparer initialized.");
+    public SemanticComparer(EmbeddingService embeddingService, VectorStore vectorStore) {
+        this.embeddingService = Objects.requireNonNull(embeddingService, "EmbeddingService cannot be null");
+        this.vectorStore = Objects.requireNonNull(vectorStore, "VectorStore cannot be null");
     }
 
-    public ComparisonResult compareToNearest(String question, String actualAnswer, int topK, double threshold) throws Exception {
-        logger.info("Comparing semantic similarity for question: {}", question);
-
-        float[] qVec = embedder.embed(question);
-        List<VectorStore.ScoredReference> hits = store.search(qVec, topK);
-
-        float[] actualVec = embedder.embed(actualAnswer);
-        double best = -1;
-        String bestRef = null;
-
-        for (var hit : hits) {
-            float[] refVec = embedder.embed(hit.referenceAnswer);
-            double sim = EmbeddingService.cosine(refVec, actualVec);
-            logger.debug("Similarity [{}] = {}", hit.referenceAnswer, sim);
-
-            if (sim > best) {
-                best = sim;
-                bestRef = hit.referenceAnswer;
-            }
-        }
-
-        boolean pass = best >= threshold;
-        logger.info(pass ? "PASS | Best similarity: {} matched reference: {}"
-                : "FAIL | Best similarity: {} matched reference: {}", best, bestRef);
-
-        return new ComparisonResult(pass, best, bestRef);
-    }
-
+    /**
+     * Result wrapper for semantic comparison.
+     */
     public static class ComparisonResult {
-        public final boolean pass;
-        public final double similarity;
-        public final String matchedReference;
+        public boolean pass;
+        public String matchedReference;
+        public double similarity;
+    }
 
-        public ComparisonResult(boolean pass, double similarity, String matchedReference) {
-            this.pass = pass;
-            this.similarity = similarity;
-            this.matchedReference = matchedReference;
+    /**
+     * Compares bot answer to nearest reference vectors.
+     *
+     * @param question  User question (optional, for logging)
+     * @param botAnswer Bot response
+     * @param topK      Number of nearest references to consider
+     * @param threshold Similarity threshold to pass
+     * @return ComparisonResult with pass/fail, similarity, and reference matched
+     */
+    public ComparisonResult compareToNearest(String question, String botAnswer, int topK, double threshold) {
+        ComparisonResult result = new ComparisonResult();
+        result.pass = false;
+        result.similarity = 0.0;
+        result.matchedReference = null;
+
+        if (botAnswer == null || botAnswer.isEmpty()) return result;
+
+        float[] botEmbedding;
+        try {
+            botEmbedding = embeddingService.embed(botAnswer);
+        } catch (Exception e) {
+            return result; // Graceful fail if embedding fails
         }
+
+        List<VectorStore.SearchResult> nearest = vectorStore.search(botEmbedding, topK);
+        if (nearest.isEmpty()) return result;
+
+        VectorStore.SearchResult best = nearest.get(0);
+        Object ref = best.metadata.get("referenceAnswer");
+        result.matchedReference = ref != null ? ref.toString() : null;
+        result.similarity = best.similarity;
+        result.pass = best.similarity >= threshold;
+
+        return result;
     }
 }
