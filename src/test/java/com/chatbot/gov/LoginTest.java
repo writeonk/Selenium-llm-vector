@@ -7,8 +7,8 @@ import pages.LoginPage;
 
 public class LoginTest extends TestBase {
 
-    @Test
-    public void tc00VerifyAppURL() {
+    @Test(priority = 1)
+    public void VerifyAppURL() {
         log.info("Verify Chatbot Application URL");
         String url = properties.getProperty("app.url");
         openURL(url);
@@ -16,8 +16,8 @@ public class LoginTest extends TestBase {
         log.info("Verify URL");
     }
 
-    @Test
-    public void tc01VerifyAppLogin() {
+    @Test(priority = 2)
+    public void VerifyAppLogin() {
         log.info("Verify Login");
 
         String email = properties.getProperty("app.email");

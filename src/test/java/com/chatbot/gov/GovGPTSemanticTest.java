@@ -56,7 +56,7 @@ public class GovGPTSemanticTest extends TestBase {
     }
 
     @Test(dataProvider = "chatbotData")
-    public void testChatbotSemantic(TestCase tc) throws Exception {
+    public void ChatbotSemantic(TestCase tc) throws Exception {
         // Send question to chatbot
         chatPage.enterBotRequest(tc.getQuestion());
         chatPage.btnSendPrompt();
