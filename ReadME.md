@@ -46,6 +46,43 @@ The goal is to ensure the chatbot returns **accurate, semantically correct answe
 
 ---
 
+## Evaluation & Scoring
+
+This project implements a world-class LLM evaluation framework, incorporating multiple layers of automated and semantic checks:
+
+1. **Semantic Similarity**
+   - Embedding-based similarity between bot answer and reference answer.
+   - Provides confidence and hallucination risk scores.
+
+2. **Lexical Metrics**
+   - BLEU-4 (smoothed), ROUGE-L, and F1 Score.
+   - Exact Match is also tracked.
+   - Tokenization handled via Apache OpenNLP.
+
+3. **Composite Scoring**
+   - Weighted combination of semantic similarity and lexical metrics.
+   - Produces a single “Final Composite Score” per test case.
+
+4. **Fallback & Model Tracking**
+   - Multiple verified HuggingFace embedding models supported.
+   - Logs which model was actually used for each test.
+
+5. **Blacklist & Safety Checks**
+   - Detects predefined sensitive terms (hallucinations).
+   - Provides warning labels in the report for potential unsafe content.
+
+6. **Accessibility & Other Checks**
+   - Tracks accessibility violations using Axe accessibility analyzer.
+   - Notes potential prompt injections or empty question fallbacks.
+
+7. **Detailed Reporting**
+   - Generates per-test HTML reports including:
+      - Question, Reference, Bot Response
+      - LLM Scores (Semantic, BLEU, ROUGE, F1, Exact Match, Confidence, Hallucination Risk)
+      - Composite Score
+      - Model Used
+   - Generates summary dashboard with pie and bar charts for aggregated results.
+
 ## Prerequisites
 
 - Java 17+

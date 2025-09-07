@@ -52,6 +52,10 @@ dependencies {
 // https://mvnrepository.com/artifact/io.github.cdimascio/dotenv-java
     implementation 'io.github.cdimascio:dotenv-java:3.2.0'
 
+    // Apache OpenNLP for tokenization
+    implementation 'org.apache.opennlp:opennlp-tools:1.9.4'
+    implementation 'org.apache.commons:commons-text:1.10.0'
+
 }
 
 test {

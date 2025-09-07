@@ -26,30 +26,29 @@ public class GovGPTSemanticTest extends TestBase {
     private LLMService llmService;
     private GovGptPage chatPage;
     private List<TestCase> testCases;
-    private final Duration TIMEOUT = Duration.ofSeconds(30);
+    private final Duration TIMEOUT = Duration.ofSeconds(75);
     private final Duration POLLING = Duration.ofMillis(250);
     private final List<TestCaseResult> allResults = new ArrayList<>();
 
-    // <-- Switch between LLM modes here -->
-
-    // private final LLMMode llmMode = LLMMode.STUB;          // Uses dummy/mock service
-    private final LLMMode llmMode = LLMMode.HUGGINGFACE;  // Uses real HuggingFace model
+    // Switch LLM mode here
+    // private final LLMMode llmMode = LLMMode.STUB;
+    private final LLMMode llmMode = LLMMode.HUGGINGFACE;
     private final String huggingFaceModel = "sentence-transformers/all-MiniLM-L6-v2";
 
     @BeforeClass
     public void init() throws Exception {
-        // Initialize embedding service and vector store
         embeddingService = new EmbeddingService();
         embeddingService.init();
         vectorStore = new InMemoryVectorStore();
 
-        // Load test cases from JSON
+        // Load test cases
         InputStream jsonStream = getClass().getClassLoader().getResourceAsStream("testData1.json");
         if (jsonStream == null) throw new RuntimeException("Cannot find testData1.json!");
         testCases = JsonDataReader.read(jsonStream);
-        if (testCases == null || testCases.isEmpty()) throw new RuntimeException("No test cases loaded!");
+        if (testCases == null || testCases.isEmpty())
+            throw new RuntimeException("No test cases loaded!");
 
-        // Populate vector store with reference embeddings
+        // Populate vector store
         for (TestCase tc : testCases) {
             if (tc.getReferenceAnswer() != null && !tc.getReferenceAnswer().isEmpty()) {
                 float[] refEmbedding = embeddingService.embed(tc.getReferenceAnswer());
@@ -57,20 +56,17 @@ public class GovGPTSemanticTest extends TestBase {
             }
         }
 
-        // Initialize semantic comparer
         comparer = new SemanticComparer(embeddingService, vectorStore);
 
-        // <-- Simplified switchable LLM -->
+        // LLM mode
         llmService = switch (llmMode) {
             case STUB -> new StubLLMService();
-            case HUGGINGFACE -> new HuggingFaceLLMService(huggingFaceModel); // Inject backbone model name
+            case HUGGINGFACE -> new HuggingFaceLLMService(huggingFaceModel);
         };
 
-        // Initialize chat page
         chatPage = new GovGptPage(driver);
         chatPage.startNewChat();
 
-        // Ensure directories exist
         Files.createDirectories(Paths.get(System.getProperty("user.dir") + "/screenshots"));
         Files.createDirectories(Paths.get(System.getProperty("user.dir") + "/reports"));
     }
@@ -91,7 +87,6 @@ public class GovGPTSemanticTest extends TestBase {
         );
         ExtentTest testCaseExtent = extent.createTest(testName);
 
-        // Add LLM mode info
         String llmInfo = llmMode == LLMMode.HUGGINGFACE
                 ? "LLM Mode: " + llmMode + " | Model: " + huggingFaceModel
                 : "LLM Mode: " + llmMode;
@@ -108,7 +103,7 @@ public class GovGPTSemanticTest extends TestBase {
             semanticResult = comparer.compareToNearest(tc.getQuestion(), botAnswer, 5, 0.8);
         }
 
-        // LLM evaluation (switchable)
+        // LLM evaluation
         Map<String, Object> llmScores = llmService.evaluateAnswer(
                 tc.getQuestion(),
                 tc.getReferenceAnswer() != null ? tc.getReferenceAnswer() : "",
@@ -130,7 +125,7 @@ public class GovGPTSemanticTest extends TestBase {
             }
         }
 
-        // Notes for prompt injection / fallback
+        // Notes
         String notes = "";
         if (tc.getExpectedKeywords() == null || tc.getExpectedKeywords().isEmpty()) {
             if (tc.getQuestion() != null && tc.getQuestion().matches(".*(<script>|DROP TABLE|ignore all instructions).*")) {
@@ -146,10 +141,9 @@ public class GovGPTSemanticTest extends TestBase {
                 tc.getExpectedBotResponseExamples().stream()
                         .anyMatch(example -> example.equalsIgnoreCase(botAnswer));
 
-        // Scoring
+        // Scores
         double semanticScore = semanticResult != null ? semanticResult.similarity : 0.0;
-        double llmConfidence = llmScores.getOrDefault("confidence", 0.0) instanceof Number ?
-                ((Number) llmScores.get("confidence")).doubleValue() : 0.0;
+        double llmConfidence = getDouble(llmScores, "confidence");
         double exampleScore = matchesExample ? 1.0 : 0.0;
         double finalScore = (semanticScore + llmConfidence + exampleScore) / 3.0;
 
@@ -158,10 +152,10 @@ public class GovGPTSemanticTest extends TestBase {
 
         LocalDateTime endTime = LocalDateTime.now();
 
-        // Logging
+        // Logs
         logMetadataTable(tc, testCaseExtent);
         logQATable(tc, botAnswer, matchesExample, testCaseExtent);
-        logLLMTable(llmScores, semanticScore, testCaseExtent);
+        logLLMTable(llmScores, testCaseExtent);
         logOtherEvaluations(tc, startTime, endTime, semanticScore, finalScore, blacklistHit, notes,
                 accessibilityViolations, detectedHallucinations, testCaseExtent);
 
@@ -176,7 +170,8 @@ public class GovGPTSemanticTest extends TestBase {
             testCaseExtent.fail(MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
         }
 
-        allResults.add(new TestCaseResult(
+        // Persist result
+        TestCaseResult result = new TestCaseResult(
                 tc.getId(),
                 botAnswer,
                 semanticScore,
@@ -186,8 +181,15 @@ public class GovGPTSemanticTest extends TestBase {
                 pass,
                 warn,
                 blacklistHit,
-                detectedHallucinations
-        ));
+                detectedHallucinations,
+                getDouble(llmScores, "bleu4"),
+                getDouble(llmScores, "rougeL"),
+                getDouble(llmScores, "f1"),
+                getDouble(llmScores, "exactMatch"),
+                getDouble(llmScores, "finalScore"),
+                String.valueOf(llmScores.getOrDefault("usedModel", "unknown"))
+        );
+        allResults.add(result);
     }
 
     @AfterClass
@@ -197,58 +199,63 @@ public class GovGPTSemanticTest extends TestBase {
         generateSummaryDashboard(allResults);
     }
 
-    // ---------------- Helper Methods ----------------
+    // ---------------- Helpers ----------------
+    private double getDouble(Map<String, Object> map, String key) {
+        return map.getOrDefault(key, 0.0) instanceof Number
+                ? ((Number) map.get(key)).doubleValue() : 0.0;
+    }
+
     private void logMetadataTable(TestCase tc, ExtentTest testCaseExtent) {
-        StringBuilder metaTable = new StringBuilder();
-        metaTable.append("<b>Test Metadata</b><br>")
-                .append("<table style='border-collapse:collapse;color:black;border:2px solid black;'>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>ID</td><td style='border:2px solid black;padding:4px;'>").append(tc.getId()).append("</td></tr>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Category</td><td style='border:2px solid black;padding:4px;'>").append(tc.getCategory()).append("</td></tr>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Severity</td><td style='border:2px solid black;padding:4px;'>").append(tc.getSeverity()).append("</td></tr>")
-                .append("</table><br>");
-        testCaseExtent.log(Status.INFO, MarkupHelper.createLabel(metaTable.toString(), ExtentColor.TRANSPARENT));
+        String html = "<b>Test Metadata</b><br>" +
+                "<table style='border-collapse:collapse;color:black;border:2px solid black;'>" +
+                "<tr><td>ID</td><td>" + tc.getId() + "</td></tr>" +
+                "<tr><td>Category</td><td>" + tc.getCategory() + "</td></tr>" +
+                "<tr><td>Severity</td><td>" + tc.getSeverity() + "</td></tr>" +
+                "</table><br>";
+        testCaseExtent.log(Status.INFO, MarkupHelper.createLabel(html, ExtentColor.TRANSPARENT));
     }
 
     private void logQATable(TestCase tc, String botAnswer, boolean matchesExample, ExtentTest testCaseExtent) {
-        StringBuilder qaTable = new StringBuilder();
-        qaTable.append("<b>Question & Bot Response</b><br>")
-                .append("<table style='border-collapse:collapse;color:black;border:2px solid black;'>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Question Asked</td><td style='border:2px solid black;padding:4px;' title='").append(tc.getQuestion()).append("'>").append(abbreviate(tc.getQuestion(), 150)).append("</td></tr>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Reference Answer</td><td style='border:2px solid black;padding:4px;' title='").append(tc.getReferenceAnswer()).append("'>").append(abbreviate(tc.getReferenceAnswer(), 150)).append("</td></tr>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Bot Response</td><td style='border:2px solid black;padding:4px;' title='").append(botAnswer).append("'>").append(abbreviate(botAnswer, 150)).append("</td></tr>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Matches Expected Examples</td><td style='border:2px solid black;padding:4px;'>").append(matchesExample ? "<span style='color:green;'>YES</span>" : "<span style='color:red;'>NO</span>").append("</td></tr>")
-                .append("</table><br>");
-        testCaseExtent.log(Status.INFO, MarkupHelper.createLabel(qaTable.toString(), ExtentColor.TRANSPARENT));
+        String html = "<b>Question & Bot Response</b><br>" +
+                "<table style='border-collapse:collapse;color:black;border:2px solid black;'>" +
+                "<tr><td>Question Asked</td><td title='" + tc.getQuestion() + "'>" + abbreviate(tc.getQuestion(), 150) + "</td></tr>" +
+                "<tr><td>Reference Answer</td><td title='" + tc.getReferenceAnswer() + "'>" + abbreviate(tc.getReferenceAnswer(), 150) + "</td></tr>" +
+                "<tr><td>Bot Response</td><td title='" + botAnswer + "'>" + abbreviate(botAnswer, 150) + "</td></tr>" +
+                "<tr><td>Matches Expected Examples</td><td>" + (matchesExample ? "<span style='color:green;'>YES</span>" : "<span style='color:red;'>NO</span>") + "</td></tr>" +
+                "</table><br>";
+        testCaseExtent.log(Status.INFO, MarkupHelper.createLabel(html, ExtentColor.TRANSPARENT));
     }
 
-    private void logLLMTable(Map<String, Object> llmScores, double semanticScore, ExtentTest testCaseExtent) {
-        StringBuilder llmTable = new StringBuilder();
-        llmTable.append("<b>LLM Scores</b><br>")
-                .append("<table style='border-collapse:collapse;color:black;border:2px solid black;'>")
-                .append(formatScoreRow("Hallucination Risk", llmScores.getOrDefault("hallucinationRisk", 0.0)))
-                .append(formatScoreRow("Confidence", llmScores.getOrDefault("confidence", 0.0)))
-                .append(formatScoreRow("Relevance", llmScores.getOrDefault("relevance", 0.0)))
-                .append("</table><br>");
-        testCaseExtent.log(Status.INFO, MarkupHelper.createLabel(llmTable.toString(), ExtentColor.TRANSPARENT));
+    private void logLLMTable(Map<String, Object> llmScores, ExtentTest testCaseExtent) {
+        String html = "<b>LLM Scores</b><br>" +
+                "<table style='border-collapse:collapse;color:black;border:2px solid black;'>" +
+                formatScoreRow("Semantic Similarity", llmScores.getOrDefault("semanticSimilarity", 0.0)) +
+                formatScoreRow("BLEU-4 (smoothed)", llmScores.getOrDefault("bleu4", 0.0)) +
+                formatScoreRow("ROUGE-L", llmScores.getOrDefault("rougeL", 0.0)) +
+                formatScoreRow("F1 Score", llmScores.getOrDefault("f1", 0.0)) +
+                formatScoreRow("Exact Match", llmScores.getOrDefault("exactMatch", 0.0)) +
+                formatScoreRow("Confidence", llmScores.getOrDefault("confidence", 0.0)) +
+                formatScoreRow("Hallucination Risk", llmScores.getOrDefault("hallucinationRisk", 0.0)) +
+                formatScoreRow("Final Composite Score", llmScores.getOrDefault("finalScore", 0.0)) +
+                "<tr><td>Model Used</td><td>" + llmScores.getOrDefault("usedModel", "N/A") + "</td></tr>" +
+                "</table><br>";
+        testCaseExtent.log(Status.INFO, MarkupHelper.createLabel(html, ExtentColor.TRANSPARENT));
     }
 
     private void logOtherEvaluations(TestCase tc, LocalDateTime startTime, LocalDateTime endTime,
                                      double semanticScore, double finalScore, boolean blacklistHit, String notes,
                                      List<JsonObject> accessibilityViolations, List<String> detectedHallucinations,
                                      ExtentTest testCaseExtent) {
-        StringBuilder evalTable = new StringBuilder();
-        evalTable.append("<b>Other Evaluations</b><br>")
-                .append("<table style='border-collapse:collapse;color:black;border:2px solid black;'>")
-                .append(formatScoreRow("Semantic Similarity", semanticScore))
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Accessibility Violations</td><td style='border:2px solid black;padding:4px;'>").append(accessibilityViolations.size()).append("</td></tr>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Blacklist Hit</td><td style='border:2px solid black;padding:4px;'>").append(blacklistHit ? "<span style='color:red;'>YES</span>" : "NO").append("</td></tr>")
-                .append(formatScoreRow("Final Score", finalScore))
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Start Time</td><td style='border:2px solid black;padding:4px;'>").append(startTime).append("</td></tr>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>End Time</td><td style='border:2px solid black;padding:4px;'>").append(endTime).append("</td></tr>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Duration</td><td style='border:2px solid black;padding:4px;'>").append(Duration.between(startTime, endTime)).append("</td></tr>")
-                .append("<tr><td style='border:2px solid black;padding:4px;'>Notes</td><td style='border:2px solid black;padding:4px;'>").append(notes).append("</td></tr>")
-                .append("</table><br>");
-        testCaseExtent.log(Status.INFO, MarkupHelper.createLabel(evalTable.toString(), ExtentColor.TRANSPARENT));
+        String html = "<b>Other Evaluations</b><br>" +
+                "<table style='border-collapse:collapse;color:black;border:2px solid black;'>" +
+                "<tr><td>Accessibility Violations</td><td>" + accessibilityViolations.size() + "</td></tr>" +
+                "<tr><td>Blacklist Hit</td><td>" + (blacklistHit ? "<span style='color:red;'>YES</span>" : "NO") + "</td></tr>" +
+                "<tr><td>Start Time</td><td>" + startTime + "</td></tr>" +
+                "<tr><td>End Time</td><td>" + endTime + "</td></tr>" +
+                "<tr><td>Duration</td><td>" + Duration.between(startTime, endTime) + "</td></tr>" +
+                "<tr><td>Notes</td><td>" + notes + "</td></tr>" +
+                "</table><br>";
+        testCaseExtent.log(Status.INFO, MarkupHelper.createLabel(html, ExtentColor.TRANSPARENT));
     }
 
     private String abbreviate(String text, int maxLength) {
@@ -259,10 +266,10 @@ public class GovGPTSemanticTest extends TestBase {
     private String formatScoreRow(String name, Object value) {
         double val = value instanceof Number ? ((Number) value).doubleValue() : 0.0;
         String color = val >= 0.8 ? "green" : val >= 0.5 ? "orange" : "red";
-        return "<tr><td style='border:2px solid black;padding:4px;'>" + name + "</td><td style='border:2px solid black;padding:4px;color:" + color + ";'>" + String.format("%.3f", val) + "</td></tr>";
+        return "<tr><td>" + name + "</td><td style='color:" + color + ";'>" + String.format("%.3f", val) + "</td></tr>";
     }
 
-    // ---------------- Summary Dashboard ----------------
+    // ---------------- Dashboard ----------------
     public void generateSummaryDashboard(List<TestCaseResult> results) throws Exception {
         int total = results.size();
         long passCount = results.stream().filter(r -> r.pass).count();
@@ -272,28 +279,43 @@ public class GovGPTSemanticTest extends TestBase {
         double avgFinalScore = results.stream().mapToDouble(r -> r.finalScore).average().orElse(0.0);
         double avgSemantic = results.stream().mapToDouble(r -> r.semanticScore).average().orElse(0.0);
         double avgLLMConfidence = results.stream().mapToDouble(r -> r.llmConfidence).average().orElse(0.0);
+        double avgBleu = results.stream().mapToDouble(r -> r.bleu4).average().orElse(0.0);
+        double avgRouge = results.stream().mapToDouble(r -> r.rougeL).average().orElse(0.0);
+        double avgF1 = results.stream().mapToDouble(r -> r.f1Score).average().orElse(0.0);
+        double avgComposite = results.stream().mapToDouble(r -> r.compositeScore).average().orElse(0.0);
 
-        StringBuilder html = new StringBuilder();
-        html.append("<html><head><title>Chatbot Test Dashboard</title>")
-                .append("<script src='https://cdn.jsdelivr.net/npm/chart.js'></script></head><body>")
-                .append("<h1>Chatbot Test Summary</h1>")
-                .append("<p>Total Tests: ").append(total).append("</p>")
-                .append("<p>PASS: ").append(passCount).append(" | WARN: ").append(warnCount)
-                .append(" | FAIL: ").append(failCount).append("</p>")
-                .append("<p>Average Final Score: ").append(String.format("%.3f", avgFinalScore))
-                .append(" | Semantic: ").append(String.format("%.3f", avgSemantic))
-                .append(" | LLM Confidence: ").append(String.format("%.3f", avgLLMConfidence))
-                .append("</p>")
-                // Optional: add pie chart for visual summary
-                .append("<canvas id='summaryChart' width='400' height='200'></canvas>")
-                .append("<script>")
-                .append("var ctx = document.getElementById('summaryChart').getContext('2d');")
-                .append("new Chart(ctx, {type: 'pie', data: {labels: ['PASS','WARN','FAIL'], datasets: [{data: [")
-                .append(passCount).append(",").append(warnCount).append(",").append(failCount)
-                .append("], backgroundColor: ['#28a745','#ffc107','#dc3545']]}});")
-                .append("</script>")
-                .append("</body></html>");
+        String html = "<html><head><title>Chatbot Test Dashboard</title>" +
+                "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script></head><body>" +
+                "<h1>Chatbot Test Summary</h1>" +
+                "<p>Total Tests: " + total + "</p>" +
+                "<p>PASS: " + passCount + " | WARN: " + warnCount + " | FAIL: " + failCount + "</p>" +
+                "<h3>Average Scores</h3><ul>" +
+                "<li>Final Score: " + String.format("%.3f", avgFinalScore) + "</li>" +
+                "<li>Semantic Similarity: " + String.format("%.3f", avgSemantic) + "</li>" +
+                "<li>LLM Confidence: " + String.format("%.3f", avgLLMConfidence) + "</li>" +
+                "<li>BLEU-4: " + String.format("%.3f", avgBleu) + "</li>" +
+                "<li>ROUGE-L: " + String.format("%.3f", avgRouge) + "</li>" +
+                "<li>F1 Score: " + String.format("%.3f", avgF1) + "</li>" +
+                "<li>Composite Score: " + String.format("%.3f", avgComposite) + "</li></ul>" +
 
-        Files.writeString(Paths.get(System.getProperty("user.dir") + "/reports/SummaryDashboard.html"), html.toString());
+                "<canvas id='summaryChart' width='400' height='200'></canvas>" +
+                "<script>new Chart(document.getElementById('summaryChart'), {type: 'pie', data: {labels: ['PASS','WARN','FAIL'], datasets: [{data: [" +
+                passCount + "," + warnCount + "," + failCount +
+                "], backgroundColor: ['#28a745','#ffc107','#dc3545']} ]}});</script>" +
+
+                "<canvas id='metricsChart' width='600' height='300'></canvas>" +
+                "<script>new Chart(document.getElementById('metricsChart'), {type: 'bar', data: {" +
+                "labels: ['Semantic','BLEU-4','ROUGE-L','F1','Confidence','Composite']," +
+                "datasets: [{label: 'Average Scores', data: [" +
+                String.format("%.3f", avgSemantic) + "," +
+                String.format("%.3f", avgBleu) + "," +
+                String.format("%.3f", avgRouge) + "," +
+                String.format("%.3f", avgF1) + "," +
+                String.format("%.3f", avgLLMConfidence) + "," +
+                String.format("%.3f", avgComposite) +
+                "], backgroundColor: '#007bff'}]}});</script>" +
+                "</body></html>";
+
+        Files.writeString(Paths.get(System.getProperty("user.dir") + "/reports/SummaryDashboard.html"), html);
     }
 }
