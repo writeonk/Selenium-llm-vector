@@ -41,7 +41,4 @@ bin/
 ### Mac OS ###
 .DS_Store
 /.idea/
-/.idea/
 /target/
-/.idea/
-/.idea/

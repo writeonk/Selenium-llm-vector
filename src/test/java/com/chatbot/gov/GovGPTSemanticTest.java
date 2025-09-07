@@ -32,7 +32,7 @@ public class GovGPTSemanticTest extends TestBase {
 
     // <-- Switch between LLM modes here -->
 
-  //  private final LLMMode llmMode = LLMMode.STUB;          // Uses dummy/mock service
+    // private final LLMMode llmMode = LLMMode.STUB;          // Uses dummy/mock service
     private final LLMMode llmMode = LLMMode.HUGGINGFACE;  // Uses real HuggingFace model
     private final String huggingFaceModel = "sentence-transformers/all-MiniLM-L6-v2";
 

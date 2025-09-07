@@ -3,37 +3,42 @@ package utils;
 import ai.djl.Application;
 import ai.djl.ModelException;
 import ai.djl.inference.Predictor;
+import ai.djl.ndarray.NDList;
 import ai.djl.repository.zoo.Criteria;
 import ai.djl.repository.zoo.ZooModel;
+import ai.djl.translate.Batchifier;
+import ai.djl.translate.Translator;
+import ai.djl.translate.TranslatorContext;
 import ai.djl.translate.TranslateException;
+import io.github.cdimascio.dotenv.Dotenv;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Safe HuggingFace embedding service with DJL.
- */
 public class HuggingFaceLLMService implements LLMService {
 
     private final ZooModel<String, float[]> embeddingModel;
     private final Predictor<String, float[]> predictor;
 
-    private static final String HF_TOKEN = "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";
+    // Load HF token from .env
+    private static final Dotenv dotenv = Dotenv.load();
+    private static final String HF_TOKEN = dotenv.get("HF_TOKEN");
 
-    public HuggingFaceLLMService(String modelName) throws IOException, ModelException {
-        System.out.println("[INFO] Loading HuggingFace model: " + modelName);
+    public HuggingFaceLLMService(String backboneModelName) throws ModelException, IOException {
+        System.out.println("[INFO] Loading HuggingFace model: " + backboneModelName);
 
         Criteria<String, float[]> criteria = Criteria.builder()
                 .setTypes(String.class, float[].class)
                 .optEngine("PyTorch")
-                .optModelUrls("djl://ai.djl.huggingface.pytorch/" + modelName)
+                .optModelUrls("djl://ai.djl.huggingface.pytorch/" + backboneModelName)
                 .optOption("apiAccessToken", HF_TOKEN)
+                .optTranslator(new FeatureExtractionTranslator())
                 .build();
 
         embeddingModel = criteria.loadModel();
         predictor = embeddingModel.newPredictor();
-        System.out.println("[INFO] Model loaded successfully ✅: " + modelName);
+        System.out.println("[INFO] Model loaded successfully ✅: " + backboneModelName);
     }
 
     @Override
@@ -72,5 +77,23 @@ public class HuggingFaceLLMService implements LLMService {
     public void close() {
         if (predictor != null) predictor.close();
         if (embeddingModel != null) embeddingModel.close();
+    }
+
+    public static class FeatureExtractionTranslator implements Translator<String, float[]> {
+        @Override
+        public NDList processInput(TranslatorContext ctx, String input) {
+            // DJL HuggingFace tokenizer handles input internally
+            return new NDList(ctx.getNDManager().create(new float[0]));
+        }
+
+        @Override
+        public float[] processOutput(TranslatorContext ctx, NDList list) {
+            return list.singletonOrThrow().toFloatArray();
+        }
+
+        @Override
+        public Batchifier getBatchifier() {
+            return null;
+        }
     }
 }
