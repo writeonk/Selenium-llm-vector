@@ -95,7 +95,7 @@ public class TestBase {
         }
     }
 
-    private void loadProperties() throws IOException {
+    private void loadProperties() {
         try (FileReader reader = new FileReader("src/test/resources/config.properties")) {
             properties = new Properties();
             properties.load(reader);
@@ -189,11 +189,10 @@ public class TestBase {
         }
     }
 
-    // Additional helper for world-class dashboard: structured category + severity
     public void logTestDetails(String category, String severity, String message) {
         ExtentColor color = ExtentColor.BLUE;
-        if ("warn".equalsIgnoreCase(severity)) color = ExtentColor.ORANGE;
-        else if ("fail".equalsIgnoreCase(severity)) color = ExtentColor.RED;
+        if ("warn" .equalsIgnoreCase(severity)) color = ExtentColor.ORANGE;
+        else if ("fail" .equalsIgnoreCase(severity)) color = ExtentColor.RED;
         test.log(Status.INFO, MarkupHelper.createLabel(category + " | " + message, color));
     }
 }
