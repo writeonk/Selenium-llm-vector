@@ -7,6 +7,7 @@ The framework leverages:
 
 - **Selenium WebDriver**: Automates chatbot UI interactions.
 - **DJL (Deep Java Library) + PyTorch**: Generates embeddings for semantic comparison.
+- **HuggingFace Models**: for semantic embeddings.
 - **In-memory vector store**: Stores reference Q&A embeddings for fast similarity checks.
 - **TestNG**: Executes tests dynamically.
 - **ExtentReports**: Logs results, failures, and generates HTML & JSON reports.
@@ -23,7 +24,8 @@ The goal is to ensure the chatbot returns **accurate, semantically correct answe
     - Supports 100+ test cases for scalability.
 
 2. **Semantic Validation**
-    - Embeds reference answers and chatbot responses.
+    - Embeds reference answers and chatbot responses. 
+    - Uses HuggingFace model
     - Compares similarity using cosine similarity.
     - Pass/fail determined by configurable threshold (default: 0.8).
 
@@ -39,7 +41,7 @@ The goal is to ensure the chatbot returns **accurate, semantically correct answe
     - Generates both HTML and JSON reports.
 
 5. **Scalable Design**
-    - Modular services: `EmbeddingService`, `InMemoryVectorStore`, `SemanticComparer`.
+    - Modular services: `EmbeddingService`, `HuggingFaceLLMService`, `InMemoryVectorStore`, `SemanticComparer`.
     - JSON-driven test data for easy extension.
 
 ---
@@ -65,6 +67,7 @@ The goal is to ensure the chatbot returns **accurate, semantically correct answe
 
 ## Configuration
  `src/test/resources/config.properties`
+ `.env` file for HuggingFace token
 
 ---
 
