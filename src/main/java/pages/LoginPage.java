@@ -26,6 +26,13 @@ public class LoginPage {
     @FindBy(xpath = "//button[@type='submit' and normalize-space()='Sign in']")
     private WebElement btnSignIn;
 
+    @FindBy(id = "chat-container")
+    private static WebElement chatBoxContainer;
+
+    public static boolean isChatWidgetDisplayed() {
+        return chatBoxContainer.isDisplayed();
+    }
+
     public void clickLoginUsingCreds() {
         btnLoginUsingCreds.click();
     }
