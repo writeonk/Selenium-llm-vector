@@ -1,0 +1,24 @@
+[INFO ] 2025-09-16 13:45:27.879 [main] TestBase - Config properties loaded successfully.
+[INFO ] 2025-09-16 13:45:27.972 [main] TestBase - ExtentReports initialized: reports/Qa_GovBot_Analytics_Report_16-09-2025_13-45-27.html
+[INFO ] 2025-09-16 13:45:29.267 [main] TestBase - Launched Chrome browser.
+[INFO ] 2025-09-16 13:45:29.613 [main] TestBase - ===== STARTING TEST: VerifyAppURL =====
+[INFO ] 2025-09-16 13:45:29.614 [main] TestBase - Verify Chatbot Application URL
+[INFO ] 2025-09-16 13:45:29.614 [main] TestBase - Navigating to URL: https://govgpt.sandbox.dge.gov.ae/
+[INFO ] 2025-09-16 13:45:34.120 [main] TestBase - Verify URL
+[INFO ] 2025-09-16 13:45:34.130 [main] TestBase - Test PASSED: VerifyAppURL
+[INFO ] 2025-09-16 13:45:34.139 [main] TestBase - ===== STARTING TEST: VerifyAppLogin =====
+[INFO ] 2025-09-16 13:45:34.139 [main] TestBase - Verify Login
+[INFO ] 2025-09-16 13:45:34.260 [main] TestBase - Click on Login Using Credentials button
+[INFO ] 2025-09-16 13:45:34.377 [main] TestBase - Enter email
+[INFO ] 2025-09-16 13:45:34.409 [main] TestBase - Enter Password
+[INFO ] 2025-09-16 13:45:34.458 [main] TestBase - Click on Login
+[INFO ] 2025-09-16 13:45:34.458 [main] TestBase - Test PASSED: VerifyAppLogin
+[INFO ] 2025-09-16 13:45:34.459 [main] TestBase - ===== STARTING TEST: ChatWidgetLoadsOnDesktopAndMobile =====
+[INFO ] 2025-09-16 13:45:34.461 [main] TestBase - Verify Chat Widget Loads On Desktop And Mobile
+[INFO ] 2025-09-16 13:45:36.153 [main] TestBase - Chat widget is visible in Desktop view! 1920 : 1080
+[INFO ] 2025-09-16 13:45:36.517 [main] TestBase - Chat widget is visible in Mobile view! 375 : 812
+[INFO ] 2025-09-16 13:45:36.590 [main] TestBase - Test PASSED: ChatWidgetLoadsOnDesktopAndMobile
+[INFO ] 2025-09-16 13:45:37.941 [main] TestBase - ===== STARTING TEST: executeAllTests =====
+[INFO ] 2025-09-16 13:46:54.675 [main] TestBase - Test PASSED: executeAllTests
+[INFO ] 2025-09-16 13:46:54.891 [main] TestBase - Browser closed successfully.
+[INFO ] 2025-09-16 13:46:55.064 [main] TestBase - ExtentReports flushed. Report available at: reports/Qa_GovBot_Analytics_Report_16-09-2025_13-45-27.html

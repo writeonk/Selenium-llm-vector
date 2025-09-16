@@ -34,7 +34,7 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.16.1'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
 
-    // AI / DJL - embeddings only
+    // AI / DJL - embeddings only // DJL HuggingFace + GPT-2
     implementation 'ai.djl:api:0.34.0'
     implementation 'ai.djl.huggingface:tokenizers:0.34.0'
     implementation 'ai.djl.pytorch:pytorch-engine:0.34.0'
@@ -54,6 +54,10 @@ dependencies {
     // Apache OpenNLP for tokenization
     implementation 'org.apache.opennlp:opennlp-tools:1.9.4'
     implementation 'org.apache.commons:commons-text:1.10.0'
+
+    // TensorFlow for GPT-2 perplexity
+    implementation 'org.tensorflow:tensorflow-core-platform:1.1.0'
+    implementation 'org.tensorflow:tensorflow-framework:0.5.0'
 
 }
 

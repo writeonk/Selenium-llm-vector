@@ -1,0 +1,679 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>GovGPT Automation Report</title>
+<link rel="apple-touch-icon" href="spark/logo.png">
+<link rel="shortcut icon" href="spark/logo.png">
+<link rel="stylesheet" href="spark/spark-style.css">
+<link rel="stylesheet" href="spark/font-awesome.min.css">
+<script src="spark/jsontree.js"></script>
+<style type="text/css"></style></head><body class="spa -report standard">
+  <div class="app">
+    <div class="layout">
+<div class="header navbar">
+<div class="vheader">
+<div class="nav-logo">
+<a href="#">
+<div class="logo" style="background-image: url('spark/logo.png')"></div>
+</a>
+</div>
+<ul class="nav-left">
+<li class="search-box">
+<a class="search-toggle" href="#">
+<i class="search-icon fa fa-search"></i>
+<i class="search-icon-close fa fa-close"></i>
+</a>
+</li>
+<li class="search-input"><input id="search-tests" class="form-control" type="text" placeholder="Search..."></li>
+</ul>
+<ul class="nav-right">
+<li class="m-r-10">
+<a href="#"><span class="badge badge-primary">Semantic + UI + Accessibility Validation Suite</span></a>
+</li>
+<li class="m-r-10">
+<a href="#"><span class="badge badge-primary">Sept 16, 2025 01:40:10 pm</span></a>
+</li>
+</ul>
+</div>
+</div><div class="side-nav">
+<div class="side-nav-inner">
+<ul class="side-nav-menu">
+<li class="nav-item dropdown" onclick="toggleView('test-view')">
+<a id="nav-test" class="dropdown-toggle" href="#">
+<span class="ico"><i class="fa fa-list"></i></span>
+</a>
+</li>
+<li class="nav-item dropdown" onclick="toggleView('category-view')">
+<a id="nav-category" class="dropdown-toggle" href="#">
+<span class="ico"><i class="fa fa-tag"></i></span>
+</a>
+</li>
+<li class="nav-item dropdown" onclick="toggleView('dashboard-view')">
+<a id="nav-dashboard" class="dropdown-toggle" href="#">
+<span class="ico"><i class="fa fa-bar-chart"></i></span>
+</a>
+</li>
+</ul>
+</div>
+</div>      <div class="vcontainer">
+        <div class="main-content">
+<div class="test-wrapper row view test-view">
+  <div class="test-list">
+    <div class="test-list-tools">
+<ul class="tools pull-left">
+<li><a href="#"><span class="font-size-14">Tests</span></a></li>
+</ul>
+<ul class="tools text-right">
+<li class="dropdown">
+<a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-exclamation-circle"></i></a>
+<ul id="status-toggle" class="dropdown-menu dropdown-md p-v-0">
+<a class="dropdown-item" status="pass" href="#"><span>Pass</span><span class="status success"></span></a>
+<a class="dropdown-item" status="warning" href="#"><span>Warning</span><span class="status warning"></span></a>
+<div class="dropdown-divider"></div>
+<a status="clear" class="dropdown-item" href="#"><span>Clear</span><span class="pull-right"><i class="fa fa-close"></i></span></a>
+</ul>
+</li>
+<li class="dropdown">
+<a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-tag"></i></a>
+<ul id="tag-toggle" class="dropdown-menu dropdown-md p-v-0">
+<a class="dropdown-item" href="#">Functional_TestCase</a>
+</ul>
+</li>
+</ul>
+</div>    <div class="test-list-wrapper scrollable">
+      <ul class="test-list-item">
+        <li class="test-item"  status="pass" test-id="1"
+          author=""
+          tag=""
+          device="">
+          <div class="test-detail">
+            <p class="name">VerifyAppURL</p>
+            <p class="text-sm">
+              <span>1:40:11 pm</span> / <span>00:00:03:971</span>
+              <span class="badge pass-bg log float-right">Pass</span>
+            </p>
+          </div>
+          <div class="test-contents d-none">
+<div class="detail-head">
+<div class="p-v-10">
+<div class="info">
+<h5 class="test-status text-pass">VerifyAppURL</h5>
+<span class='badge badge-success'>09.16.2025 1:40:11 pm</span>
+<span class='badge badge-danger'>09.16.2025 1:40:15 pm</span>
+<span class='badge badge-default'>00:00:03:971</span>
+&middot; <span class='uri-anchor badge badge-default'>#test-id=1</span>
+<span title='Skip to the next failed step' class='badge badge-danger pointer float-right ne ml-1'><i class="fa fa-fast-forward"></i></span>
+<span title='Collapse all nodes' class='badge badge-default pointer float-right ct ml-1'><i class="fa fa-compress"></i></span>
+<span title='Expand all nodes' class='badge badge-default pointer float-right et'><i class="fa fa-expand"></i></span>
+</div>
+</div>
+</div><div class="detail-body mt-4">
+<table class="table table-sm">
+  <thead><tr><th class="status-col">Status</th><th class="timestamp-col">Timestamp</th><th class="details-col">Details</th></tr></thead>
+  <tbody>
+      <tr class="event-row">
+        <td><span class="badge log info-bg">Info</span></td>
+        <td>1:40:15 pm</td>
+        <td>
+          Verify URL
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log pass-bg">Pass</span></td>
+        <td>1:40:15 pm</td>
+        <td>
+          <span class='badge white-text green'><span class='badge badge-success'>PASS</span> | VerifyAppURL</span>
+        </td>
+      </tr>
+  </tbody>
+</table>
+</div>
+          </div>
+        </li>
+        <li class="test-item"  status="pass" test-id="2"
+          author=""
+          tag=""
+          device="">
+          <div class="test-detail">
+            <p class="name">VerifyAppLogin</p>
+            <p class="text-sm">
+              <span>1:40:15 pm</span> / <span>00:00:00:220</span>
+              <span class="badge pass-bg log float-right">Pass</span>
+            </p>
+          </div>
+          <div class="test-contents d-none">
+<div class="detail-head">
+<div class="p-v-10">
+<div class="info">
+<h5 class="test-status text-pass">VerifyAppLogin</h5>
+<span class='badge badge-success'>09.16.2025 1:40:15 pm</span>
+<span class='badge badge-danger'>09.16.2025 1:40:16 pm</span>
+<span class='badge badge-default'>00:00:00:220</span>
+&middot; <span class='uri-anchor badge badge-default'>#test-id=2</span>
+<span title='Skip to the next failed step' class='badge badge-danger pointer float-right ne ml-1'><i class="fa fa-fast-forward"></i></span>
+<span title='Collapse all nodes' class='badge badge-default pointer float-right ct ml-1'><i class="fa fa-compress"></i></span>
+<span title='Expand all nodes' class='badge badge-default pointer float-right et'><i class="fa fa-expand"></i></span>
+</div>
+</div>
+</div><div class="detail-body mt-4">
+<table class="table table-sm">
+  <thead><tr><th class="status-col">Status</th><th class="timestamp-col">Timestamp</th><th class="details-col">Details</th></tr></thead>
+  <tbody>
+      <tr class="event-row">
+        <td><span class="badge log info-bg">Info</span></td>
+        <td>1:40:16 pm</td>
+        <td>
+          Clicked on Login Using Credentials
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log info-bg">Info</span></td>
+        <td>1:40:16 pm</td>
+        <td>
+          Entered email
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log info-bg">Info</span></td>
+        <td>1:40:16 pm</td>
+        <td>
+          Entered password
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log info-bg">Info</span></td>
+        <td>1:40:16 pm</td>
+        <td>
+          Clicked on SignIn
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log pass-bg">Pass</span></td>
+        <td>1:40:16 pm</td>
+        <td>
+          <span class='badge white-text green'><span class='badge badge-success'>PASS</span> | VerifyAppLogin</span>
+        </td>
+      </tr>
+  </tbody>
+</table>
+</div>
+          </div>
+        </li>
+        <li class="test-item"  status="pass" test-id="3"
+          author=""
+          tag=""
+          device="">
+          <div class="test-detail">
+            <p class="name">ChatWidgetLoadsOnDesktopAndMobile</p>
+            <p class="text-sm">
+              <span>1:40:16 pm</span> / <span>00:00:00:000</span>
+              <span class="badge pass-bg log float-right">Pass</span>
+            </p>
+          </div>
+          <div class="test-contents d-none">
+<div class="detail-head">
+<div class="p-v-10">
+<div class="info">
+<h5 class="test-status text-pass">ChatWidgetLoadsOnDesktopAndMobile</h5>
+<span class='badge badge-success'>09.16.2025 1:40:16 pm</span>
+<span class='badge badge-danger'>09.16.2025 1:40:16 pm</span>
+<span class='badge badge-default'>00:00:00:000</span>
+&middot; <span class='uri-anchor badge badge-default'>#test-id=3</span>
+<span title='Skip to the next failed step' class='badge badge-danger pointer float-right ne ml-1'><i class="fa fa-fast-forward"></i></span>
+<span title='Collapse all nodes' class='badge badge-default pointer float-right ct ml-1'><i class="fa fa-compress"></i></span>
+<span title='Expand all nodes' class='badge badge-default pointer float-right et'><i class="fa fa-expand"></i></span>
+</div>
+</div>
+</div>          </div>
+        </li>
+        <li class="test-item"  status="pass" test-id="4"
+          author=""
+          tag="Functional_TestCase"
+          device="">
+          <div class="test-detail">
+            <p class="name">Verify Chat Widget Loads On Desktop And Mobile</p>
+            <p class="text-sm">
+              <span>1:40:16 pm</span> / <span>00:00:02:233</span>
+              <span class="badge pass-bg log float-right">Pass</span>
+            </p>
+          </div>
+          <div class="test-contents d-none">
+<div class="detail-head">
+<div class="p-v-10">
+<div class="info">
+<h5 class="test-status text-pass">Verify Chat Widget Loads On Desktop And Mobile</h5>
+<span class='badge badge-success'>09.16.2025 1:40:16 pm</span>
+<span class='badge badge-danger'>09.16.2025 1:40:18 pm</span>
+<span class='badge badge-default'>00:00:02:233</span>
+&middot; <span class='uri-anchor badge badge-default'>#test-id=4</span>
+<span title='Skip to the next failed step' class='badge badge-danger pointer float-right ne ml-1'><i class="fa fa-fast-forward"></i></span>
+<span title='Collapse all nodes' class='badge badge-default pointer float-right ct ml-1'><i class="fa fa-compress"></i></span>
+<span title='Expand all nodes' class='badge badge-default pointer float-right et'><i class="fa fa-expand"></i></span>
+</div>
+<div class="m-t-15"><span class="badge badge-pill badge-default">Functional_TestCase</span></div>
+<div class="m-t-10 m-l-5"></div>
+</div>
+</div><div class="detail-body mt-4">
+<table class="table table-sm">
+  <thead><tr><th class="status-col">Status</th><th class="timestamp-col">Timestamp</th><th class="details-col">Details</th></tr></thead>
+  <tbody>
+      <tr class="event-row">
+        <td><span class="badge log pass-bg">Pass</span></td>
+        <td>1:40:17 pm</td>
+        <td>
+          Chat widget is visible in Desktop view! 1920 : 1080
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log pass-bg">Pass</span></td>
+        <td>1:40:18 pm</td>
+        <td>
+          Chat widget is visible in Mobile view! 375 : 812
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log pass-bg">Pass</span></td>
+        <td>1:40:18 pm</td>
+        <td>
+          <span class='badge white-text green'><span class='badge badge-success'>PASS</span> | ChatWidgetLoadsOnDesktopAndMobile</span>
+        </td>
+      </tr>
+  </tbody>
+</table>
+</div>
+          </div>
+        </li>
+        <li class="test-item"  status="pass" test-id="5"
+          author=""
+          tag=""
+          device="">
+          <div class="test-detail">
+            <p class="name">executeAllTests</p>
+            <p class="text-sm">
+              <span>1:40:19 pm</span> / <span>00:01:16:898</span>
+              <span class="badge pass-bg log float-right">Pass</span>
+            </p>
+          </div>
+          <div class="test-contents d-none">
+<div class="detail-head">
+<div class="p-v-10">
+<div class="info">
+<h5 class="test-status text-pass">executeAllTests</h5>
+<span class='badge badge-success'>09.16.2025 1:40:19 pm</span>
+<span class='badge badge-danger'>09.16.2025 1:41:36 pm</span>
+<span class='badge badge-default'>00:01:16:898</span>
+&middot; <span class='uri-anchor badge badge-default'>#test-id=5</span>
+<span title='Skip to the next failed step' class='badge badge-danger pointer float-right ne ml-1'><i class="fa fa-fast-forward"></i></span>
+<span title='Collapse all nodes' class='badge badge-default pointer float-right ct ml-1'><i class="fa fa-compress"></i></span>
+<span title='Expand all nodes' class='badge badge-default pointer float-right et'><i class="fa fa-expand"></i></span>
+</div>
+</div>
+</div><div class="detail-body mt-4">
+<table class="table table-sm">
+  <thead><tr><th class="status-col">Status</th><th class="timestamp-col">Timestamp</th><th class="details-col">Details</th></tr></thead>
+  <tbody>
+      <tr class="event-row">
+        <td><span class="badge log pass-bg">Pass</span></td>
+        <td>1:41:36 pm</td>
+        <td>
+          <span class='badge white-text green'><span class='badge badge-success'>PASS</span> | executeAllTests</span>
+        </td>
+      </tr>
+  </tbody>
+</table>
+</div>
+          </div>
+        </li>
+        <li class="test-item"  status="warning" test-id="6"
+          author=""
+          tag=""
+          device="">
+          <div class="test-detail">
+            <p class="name">ID: tc01 | Category: accuracy | Severity: fail | Question: What is the process to get a driving license in UAE?</p>
+            <p class="text-sm">
+              <span>1:40:19 pm</span> / <span>00:01:16:896</span>
+              <span class="badge warning-bg log float-right">Warning</span>
+            </p>
+          </div>
+          <div class="test-contents d-none">
+<div class="detail-head">
+<div class="p-v-10">
+<div class="info">
+<h5 class="test-status text-warning">ID: tc01 | Category: accuracy | Severity: fail | Question: What is the process to get a driving license in UAE?</h5>
+<span class='badge badge-success'>09.16.2025 1:40:19 pm</span>
+<span class='badge badge-danger'>09.16.2025 1:41:36 pm</span>
+<span class='badge badge-default'>00:01:16:896</span>
+&middot; <span class='uri-anchor badge badge-default'>#test-id=6</span>
+<span title='Skip to the next failed step' class='badge badge-danger pointer float-right ne ml-1'><i class="fa fa-fast-forward"></i></span>
+<span title='Collapse all nodes' class='badge badge-default pointer float-right ct ml-1'><i class="fa fa-compress"></i></span>
+<span title='Expand all nodes' class='badge badge-default pointer float-right et'><i class="fa fa-expand"></i></span>
+</div>
+</div>
+</div><div class="detail-body mt-4">
+<table class="table table-sm">
+  <thead><tr><th class="status-col">Status</th><th class="timestamp-col">Timestamp</th><th class="details-col">Details</th></tr></thead>
+  <tbody>
+      <tr class="event-row">
+        <td><span class="badge log info-bg">Info</span></td>
+        <td>1:40:19 pm</td>
+        <td>
+          <span class='badge white-text blue'>LLM Mode: STUB</span>
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log warning-bg">Warning</span></td>
+        <td>1:41:36 pm</td>
+        <td>
+          <span class='badge white-text orange'>Hallucination | Detected: 'Dubai'</span>
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log info-bg">Info</span></td>
+        <td>1:41:36 pm</td>
+        <td>
+          <span class='badge white-text transparent'><b>Test Metadata</b><br><table style='border-collapse:collapse;color:black;border:2px solid black;'><tr><td>ID</td><td>tc01</td></tr><tr><td>Category</td><td>accuracy</td></tr><tr><td>Severity</td><td>fail</td></tr></table><br></span>
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log info-bg">Info</span></td>
+        <td>1:41:36 pm</td>
+        <td>
+          <span class='badge white-text transparent'><b>Question & Bot Response</b><br><table style='border-collapse:collapse;color:black;border:2px solid black;'><tr><td>Question Asked</td><td title='What is the process to get a driving license in UAE?'>What is the process to get a driving license in UAE?</td></tr><tr><td>Reference Answer</td><td title='Enroll in an approved driving school, complete theory and practical lessons, pass the RTA knowledge and road tests, and obtain the UAE driving license.'>Enroll in an approved driving school, complete theory and practical lessons, pass the RTA knowledge and road tests, and obtain the UAE driving lice...</td></tr><tr><td>Bot Response</td><td title='Step-by-Step Guide: How to Get a Driving License in the UAE
+Obtaining a driving license in the UAE involves several steps, which may vary slightly depending on your nationality and the emirate where you apply. Below is a clear, step-by-step guide based on the latest official and reputable sources.
+1. Check Eligibility
+Minimum Age Requirements:
+17 years: Motorcycles and vehicles for people with special needs
+18 years: Cars and light vehicles
+20 years: Heavy vehicles and tractors
+21 years: Buses[^1]
+Residency: You must be a UAE resident with a valid Emirates ID[^2].
+2. Determine If You Can Exchange Your License
+If you hold a valid driving license from certain approved countries, you may be eligible for a direct exchange without taking tests. Check the latest list of eligible countries on the official Roads and Transport Authority (RTA) website for your emirate[^2][^3].
+If your country is not on the list, you must follow the full process for new drivers.
+3. Prepare Required Documents
+Copy and original of your passport and residence visa page
+Copy and original Emirates ID card
+Passport-sized photographs (number may vary by emirate)
+Eye test report (from an approved center)
+No Objection Certificate (NOC) from your sponsor/employer (if required)[^1][^2]
+Translation of your home country license (if exchanging and not in Arabic/English)[^2]
+4. Open a Traffic File
+Visit a registered driving institute in your emirate to open a traffic file[^1][^3].
+Submit all required documents and pay the applicable fees.
+5. Take an Eye Test
+Complete an eye test at an authorized optical shop or driving school[^2].
+6. Complete Training
+Attend theoretical classes covering road signs, traffic rules, and safe driving practices.
+Take practical driving lessons as required by your driving institute[^1][^3].
+7. Pass the Required Tests
+Theory Test: Covers road signs, rules, and general driving knowledge.
+Practical Test: Assesses your driving skills on the road.
+Some applicants may also need to pass internal assessments at the driving institute[^2][^3].
+8. Submit Application and Pay Fees
+Once you pass all required tests, submit your application for the driving license at the RTA or relevant traffic authority.
+Pay the final issuance fee. Fees vary by emirate and license type[^2].
+9. Receive Your License
+After approval, you will receive your UAE driving license. Collection can be in person or, in some emirates, delivered to your address[^2].
+Important Notes
+The process may differ slightly between emirates (e.g., Dubai, Abu Dhabi, Sharjah).
+Always check the latest requirements and fee schedules on the official RTA or traffic authority website for your emirate.
+Driving licenses are generally valid for 10 years for UAE and GCC citizens, and 5 years for residents[^1].
+References
+[^1]:
+1
+[^2]:
+2
+[^3]:
+3
+If you need emirate-specific details or have a particular situation (such as transferring a license from a specific country), please let me know for more tailored guidance.
+Sources'>Step-by-Step Guide: How to Get a Driving License in the UAE
+Obtaining a driving license in the UAE involves several steps, which may vary slightly ...</td></tr><tr><td>Matches Expected Examples</td><td><span style='color:red;'>NO</span></td></tr></table><br></span>
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log info-bg">Info</span></td>
+        <td>1:41:36 pm</td>
+        <td>
+          <span class='badge white-text transparent'><b>LLM Scores & Additional Metrics</b><br><table style='border-collapse:collapse;color:black;border:2px solid black;'><tr><td>Semantic Similarity</td><td style='color:orange;'>0.773</td></tr><tr><td>BLEU-4 (smoothed)</td><td style='color:red;'>0.027</td></tr><tr><td>ROUGE-L</td><td style='color:orange;'>0.648</td></tr><tr><td>F1 Score</td><td style='color:red;'>0.085</td></tr><tr><td>Exact Match</td><td style='color:red;'>0.000</td></tr><tr><td>Confidence</td><td style='color:orange;'>0.776</td></tr><tr><td>Perplexity</td><td style='color:red;'>0.000</td></tr><tr><td>METEOR</td><td style='color:orange;'>0.750</td></tr><tr><td>Contradiction</td><td style='color:green;'>1.000</td></tr><tr><td>Multi-turn Consistency</td><td style='color:green;'>1.000</td></tr><tr><td>Length Ratio</td><td style='color:green;'>19.815</td></tr><tr><td>Redundancy</td><td style='color:green;'>210.000</td></tr><tr><td>Diversity</td><td style='color:orange;'>0.552</td></tr><tr><td>Final Composite Score</td><td style='color:orange;'>0.557</td></tr><tr><td>Model Used</td><td>STUB_ADVANCED</td></tr></table><br></span>
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log info-bg">Info</span></td>
+        <td>1:41:36 pm</td>
+        <td>
+          <span class='badge white-text transparent'><b>Other Evaluations</b><br><table style='border-collapse:collapse;color:black;border:2px solid black;'><tr><td>Accessibility Violations</td><td>0</td></tr><tr><td>Blacklist Hit</td><td><span style='color:red;'>YES</span></td></tr><tr><td>Detected Hallucinations</td><td>Dubai</td></tr><tr><td>Semantic Score</td><td>0.949</td></tr><tr><td>Final Score</td><td>0.575</td></tr><tr><td>Start Time</td><td>2025-09-16T13:40:19.740625</td></tr><tr><td>End Time</td><td>2025-09-16T13:41:36.628296</td></tr><tr><td>Duration</td><td>PT1M16.887671S</td></tr><tr><td>Notes</td><td>None</td></tr></table><br></span>
+        </td>
+      </tr>
+      <tr class="event-row">
+        <td><span class="badge log warning-bg">Warning</span></td>
+        <td>1:41:36 pm</td>
+        <td>
+          <span class='badge white-text orange'><span class='badge badge-warning'>WARN</span></span>
+        </td>
+      </tr>
+  </tbody>
+</table>
+</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+<div class="test-content scrollable">
+<div class="test-content-tools">
+<ul><li><a class="back-to-test" href="#"><i class="fa fa-arrow-left"></i></a></li></ul>
+</div>
+<div class="test-content-detail"><div class="detail-body"></div></div>
+</div></div>
+<div class="test-wrapper row view category-view attributes-view">
+<div class="test-list">
+<div class="test-list-tools">
+<ul class="tools pull-left"><li><a href=""><span class="font-size-14">Category</span></a></li></ul>
+<ul class="tools text-right"><li><a href="#"><span class="badge badge-primary">1</span></a></li></ul>
+</div>
+<div class="test-list-wrapper scrollable">
+<ul class="test-list-item">
+<li class="test-item">
+<div class="test-detail">
+<span class="meta">
+<span class='badge log pass-bg'>1</span>
+</span>
+<p class="name">Functional_TestCase</p>
+<p class="duration text-sm">1 tests</p>
+</div>
+<div class="test-contents d-none">
+<div class="info">
+<h4>Functional_TestCase</h4>
+<span status="pass" class='badge log pass-bg'>1 passed</span>
+</div>
+<table class='table table-sm mt-4'>
+<thead>
+<tr>
+<th class="status-col">Status</th>
+<th class="timestamp-col">Timestamp</th>
+<th>TestName</th>
+</tr>
+</thead>
+<tbody>
+<tr class="tag-test-status" status="pass">
+<td><span class="badge log pass-bg">Pass</span></td>
+<td>13:40:16 pm</td>
+<td>
+<a href="#" class="linked" test-id='4' id='4'>Verify Chat Widget Loads On Desktop And Mobile</a>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="test-content scrollable">
+<div class="test-content-detail">
+<div class="detail-body"></div>
+</div>
+</div>
+</div><div class="container-fluid p-4 view dashboard-view">
+<div class="row">
+<div class="col-md-3">
+<div class="card"><div class="card-body">
+<p class="m-b-0">Started</p>
+<h3>Sept 16, 2025 01:40:10 pm</h3>
+</div></div>
+</div>
+<div class="col-md-3">
+<div class="card"><div class="card-body">
+<p class="m-b-0">Ended</p>
+<h3>Sept 16, 2025 01:41:36 pm</h3>
+</div></div>
+</div>
+<div class="col-md-3">
+<div class="card"><div class="card-body">
+<p class="m-b-0 text-pass">Tests Passed</p>
+<h3>5</h3>
+</div></div>
+</div>
+<div class="col-md-3">
+<div class="card"><div class="card-body">
+<p class="m-b-0 text-fail">Tests Failed</p>
+<h3>0</h3>
+</div></div>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6">
+<div class="card">
+<div class="card-header">
+<h6 class="card-title">Tests</h6>
+</div>
+<div class="card-body">
+<div class="">
+<canvas id='parent-analysis' width='115' height='90'></canvas>
+</div>
+</div>
+<div class="card-footer">
+<div><small data-tooltip='83%'>
+<b>5</b> tests passed
+</small>
+</div>
+<div>
+<small data-tooltip='0%'><b>0</b> tests failed,
+<b>0</b> skipped, <b data-tooltip='16%'>1</b> others
+</small>
+</div>
+</div>
+</div>
+</div>
+<div class="col-md-6">
+<div class="card">
+<div class="card-header">
+<h6 class="card-title">Log events</h6>
+</div>
+<div class="card-body">
+<div class="">
+<canvas id='events-analysis' width='115' height='90'></canvas>
+</div>
+</div>
+<div class="card-footer">
+<div><small data-tooltip='33%'><b>6</b> events passed</small></div>
+<div>
+<small data-tooltip='0%'><b>0</b> events failed,
+<b data-tooltip='%'>12</b> others
+</small>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="row"><div class="col-md-12">
+<div class="card"><div class="card-header"><p>Timeline</p></div>
+<div class="card-body pt-0"><div>
+<canvas id="timeline" height="120"></canvas>
+</div></div>
+</div>
+</div></div>
+<script>
+var timeline = {
+"VerifyAppURL":3.971,"VerifyAppLogin":0.22,"ChatWidgetLoadsOnDesktopAndMobile":0,"Verify Chat Widget Loads On Desktop And Mobile":2.233,"executeAllTests":76.898,"ID: tc01 | Category: accuracy | Severity: fail | Question: What is the process to get a driving license in UAE?":76.896
+};
+</script>
+<div class="row">
+<div class="col-lg-6 col-md-12 category-container">
+<div class="card">
+<div class="card-header"><p>Tags</p></div>
+<div class="card-body pb-0 pt-0"><table class="table table-sm table-bordered">
+<thead><tr class="bg-gray"><th>Name</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Others</th><th>Passed %</th></tr></thead><tbody>
+<tr>
+<td>Functional_TestCase</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+<div class="col-lg-6 col-md-12 sysenv-container">
+<div class="card">
+<div class="card-header"><p>System/Environment</p></div>
+<div class="card-body pb-0 pt-0"><table class="table table-sm table-bordered">
+<thead><tr class="bg-gray"><th>Name</th><th>Value</th></tr></thead>
+<tbody>
+<tr>
+<td>OS</td>
+<td>Mac OS X</td>
+</tr>
+<tr>
+<td>Browser</td>
+<td>chrome</td>
+</tr>
+<tr>
+<td>Environment</td>
+<td>Sandbox</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+</div>
+</div>
+<script>
+var statusGroup = {
+parentCount: 5,
+passParent: 5,
+failParent: 0,
+warningParent: 1,
+skipParent: 0,
+childCount: 5,
+passChild: 0,
+failChild: 0,
+warningChild: 0,
+skipChild: 0,
+infoChild: 0,
+grandChildCount: 5,
+passGrandChild: 0,
+failGrandChild: 0,
+warningGrandChild: 0,
+skipGrandChild: 0,
+infoGrandChild: 0,
+eventsCount: 5,
+passEvents: 6,
+failEvents: 0,
+warningEvents: 2,
+skipEvents: 0,
+infoEvents: 10
+};
+</script>        </div>
+      </div>
+    </div>
+  </div>
+<script src="spark/spark-script.js"></script>
+<script type="text/javascript"></script></body>
+</html>

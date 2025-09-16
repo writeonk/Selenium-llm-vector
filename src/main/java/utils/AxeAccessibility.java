@@ -8,16 +8,15 @@ import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 public class AxeAccessibility {
 
     private static final Logger log = LogManager.getLogger(AxeAccessibility.class);
-    private static final String AXE_JS_PATH = "src/test/resources/axe.min.js";
+    private static final String AXE_RESOURCE = "axe.min.js";
 
     /**
      * Analyze the page for accessibility violations by injecting axe.min.js.
@@ -29,8 +28,12 @@ public class AxeAccessibility {
         List<JsonObject> violationsList = new ArrayList<>();
 
         try {
-            // Load axe.min.js content
-            String axeScript = new String(Files.readAllBytes(Paths.get(AXE_JS_PATH)));
+            // ✅ Load axe.min.js from classpath (src/test/resources)
+            InputStream is = AxeAccessibility.class.getClassLoader().getResourceAsStream(AXE_RESOURCE);
+            if (is == null) {
+                throw new IllegalStateException("axe.min.js not found on classpath under test/resources!");
+            }
+            String axeScript = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 
             JavascriptExecutor js = (JavascriptExecutor) driver;
 
@@ -49,7 +52,6 @@ public class AxeAccessibility {
             }
 
             String resultJson = rawResult.toString();
-
             JsonObject resultObj = JsonParser.parseString(resultJson).getAsJsonObject();
             JsonArray violations = resultObj.getAsJsonArray("violations");
 
@@ -59,8 +61,6 @@ public class AxeAccessibility {
 
             log.info("Accessibility violations found: {}", violationsList.size());
 
-        } catch (IOException e) {
-            log.error("Failed to read axe.min.js file at " + AXE_JS_PATH, e);
         } catch (Exception e) {
             log.error("Error during Axe accessibility analysis", e);
         }

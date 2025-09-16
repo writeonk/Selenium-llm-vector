@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class GovGPTSemanticTest extends TestBase {
 
@@ -25,13 +26,16 @@ public class GovGPTSemanticTest extends TestBase {
     private SemanticComparer comparer;
     private LLMService llmService;
     private GovGptPage chatPage;
+    private PerplexityCalculator perplexityCalculator;
+    private MeteorCalculator meteorCalculator;
+    private NLIService nliService;
+    private MultiTurnService multiTurnService;
     private List<TestCase> testCases;
     private final Duration TIMEOUT = Duration.ofSeconds(75);
     private final Duration POLLING = Duration.ofMillis(250);
     private final List<TestCaseResult> allResults = new ArrayList<>();
+    private final Map<String, String> conversationHistory = new HashMap<>();
 
-    // Switch LLM mode here
-    // private final LLMMode llmMode = LLMMode.STUB;
     private final LLMMode llmMode = LLMMode.HUGGINGFACE;
     private final String huggingFaceModel = "sentence-transformers/all-MiniLM-L6-v2";
 
@@ -40,6 +44,11 @@ public class GovGPTSemanticTest extends TestBase {
         embeddingService = new EmbeddingService();
         embeddingService.init();
         vectorStore = new InMemoryVectorStore();
+
+        perplexityCalculator = new PerplexityCalculator("gpt2");
+        meteorCalculator = new MeteorCalculator();
+        nliService = new NLIService();
+        multiTurnService = new MultiTurnService();
 
         // Load test cases
         InputStream jsonStream = getClass().getClassLoader().getResourceAsStream("testData1.json");
@@ -72,7 +81,7 @@ public class GovGPTSemanticTest extends TestBase {
     }
 
     @Test
-    public void executeAllTests() throws Exception {
+    public void executeAllTests() {
         for (TestCase tc : testCases) {
             runTest(tc);
         }
@@ -92,25 +101,57 @@ public class GovGPTSemanticTest extends TestBase {
                 : "LLM Mode: " + llmMode;
         testCaseExtent.info(MarkupHelper.createLabel(llmInfo, ExtentColor.BLUE));
 
-        // Bot interaction
+        // ---- Bot Interaction ----
         chatPage.enterBotRequest(tc.getQuestion());
         chatPage.btnSendPrompt();
         String botAnswer = chatPage.BotResponse(TIMEOUT, POLLING);
 
-        // Semantic comparison
+        // ---- Semantic Comparison ----
         SemanticComparer.ComparisonResult semanticResult = null;
         if (tc.getReferenceAnswer() != null && !tc.getReferenceAnswer().isEmpty()) {
             semanticResult = comparer.compareToNearest(tc.getQuestion(), botAnswer, 5, 0.8);
         }
 
-        // LLM evaluation
+        // ---- LLM Evaluation (6 parameters) ----
+        String previousBotAnswer = conversationHistory.getOrDefault(tc.getId(), "");
+        String userContext = ""; // Can be replaced with real context
+        List<String> extraContext = tc.getExpectedKeywords() != null ? tc.getExpectedKeywords() : List.of();
+
         Map<String, Object> llmScores = llmService.evaluateAnswer(
                 tc.getQuestion(),
                 tc.getReferenceAnswer() != null ? tc.getReferenceAnswer() : "",
-                botAnswer
+                botAnswer,
+                "testUser",            // userId placeholder
+                "session123",          // sessionId placeholder
+                extraContext
         );
 
-        // Accessibility & blacklist
+        conversationHistory.put(tc.getId(), botAnswer);
+
+        // ---- Additional Metrics ----
+        try {
+            llmScores.put("perplexity", perplexityCalculator.computePerplexity(botAnswer));
+        } catch (Exception e) {
+            llmScores.put("perplexity", 0.0);
+        }
+
+        double meteorScore = tc.getReferenceAnswer() != null ? meteorCalculator.computeScore(tc.getReferenceAnswer(), botAnswer) : 0.0;
+        llmScores.put("meteor", meteorScore);
+
+        double contradiction = tc.getReferenceAnswer() != null && nliService.isContradiction(tc.getReferenceAnswer(), botAnswer) ? 1.0 : 0.0;
+        llmScores.put("contradiction", contradiction);
+
+        double multiTurnConsistency = previousBotAnswer.isEmpty() ? 1.0 : (multiTurnService.isConsistent(previousBotAnswer, botAnswer) ? 1.0 : 0.0);
+        llmScores.put("multiTurnConsistency", multiTurnConsistency);
+
+        double lengthRatio = tc.getReferenceAnswer() != null ? ((double) botAnswer.length() / tc.getReferenceAnswer().length()) : 1.0;
+        double redundancy = multiTurnService.countRepeatedTokens(botAnswer);
+        double diversity = multiTurnService.typeTokenRatio(botAnswer);
+        llmScores.put("lengthRatio", lengthRatio);
+        llmScores.put("redundancy", redundancy);
+        llmScores.put("diversity", diversity);
+
+        // ---- Accessibility & Blacklist ----
         List<JsonObject> accessibilityViolations = AxeAccessibility.analyzePage(driver);
         boolean blacklistHit = false;
         List<String> detectedHallucinations = new ArrayList<>();
@@ -125,7 +166,7 @@ public class GovGPTSemanticTest extends TestBase {
             }
         }
 
-        // Notes
+        // ---- Notes & Security ----
         String notes = "";
         if (tc.getExpectedKeywords() == null || tc.getExpectedKeywords().isEmpty()) {
             if (tc.getQuestion() != null && tc.getQuestion().matches(".*(<script>|DROP TABLE|ignore all instructions).*")) {
@@ -141,7 +182,7 @@ public class GovGPTSemanticTest extends TestBase {
                 tc.getExpectedBotResponseExamples().stream()
                         .anyMatch(example -> example.equalsIgnoreCase(botAnswer));
 
-        // Scores
+        // ---- Compute Scores ----
         double semanticScore = semanticResult != null ? semanticResult.similarity : 0.0;
         double llmConfidence = getDouble(llmScores, "confidence");
         double exampleScore = matchesExample ? 1.0 : 0.0;
@@ -152,13 +193,14 @@ public class GovGPTSemanticTest extends TestBase {
 
         LocalDateTime endTime = LocalDateTime.now();
 
-        // Logs
+        // ---- Logging ----
         logMetadataTable(tc, testCaseExtent);
         logQATable(tc, botAnswer, matchesExample, testCaseExtent);
         logLLMTable(llmScores, testCaseExtent);
         logOtherEvaluations(tc, startTime, endTime, semanticScore, finalScore, blacklistHit, notes,
                 accessibilityViolations, detectedHallucinations, testCaseExtent);
 
+        // ---- Test Result Status ----
         if (pass)
             testCaseExtent.pass(MarkupHelper.createLabel("<span class='badge badge-success'>PASS</span>", ExtentColor.GREEN));
         else if (warn)
@@ -170,7 +212,7 @@ public class GovGPTSemanticTest extends TestBase {
             testCaseExtent.fail(MediaEntityBuilder.createScreenCaptureFromPath(screenshotPath).build());
         }
 
-        // Persist result
+        // ---- Persist Result ----
         TestCaseResult result = new TestCaseResult(
                 tc.getId(),
                 botAnswer,
@@ -187,7 +229,14 @@ public class GovGPTSemanticTest extends TestBase {
                 getDouble(llmScores, "f1"),
                 getDouble(llmScores, "exactMatch"),
                 getDouble(llmScores, "finalScore"),
-                String.valueOf(llmScores.getOrDefault("usedModel", "unknown"))
+                String.valueOf(llmScores.getOrDefault("usedModel", "unknown")),
+                getDouble(llmScores, "perplexity"),
+                getDouble(llmScores, "meteor"),
+                getDouble(llmScores, "contradiction"),
+                getDouble(llmScores, "multiTurnConsistency"),
+                getDouble(llmScores, "lengthRatio"),
+                getDouble(llmScores, "redundancy"),
+                getDouble(llmScores, "diversity")
         );
         allResults.add(result);
     }
@@ -203,6 +252,17 @@ public class GovGPTSemanticTest extends TestBase {
     private double getDouble(Map<String, Object> map, String key) {
         return map.getOrDefault(key, 0.0) instanceof Number
                 ? ((Number) map.get(key)).doubleValue() : 0.0;
+    }
+
+    private String abbreviate(String text, int maxLength) {
+        if (text == null) return "";
+        return text.length() <= maxLength ? text : text.substring(0, maxLength - 3) + "...";
+    }
+
+    private String formatScoreRow(String name, Object value) {
+        double val = value instanceof Number ? ((Number) value).doubleValue() : 0.0;
+        String color = val >= 0.8 ? "green" : val >= 0.5 ? "orange" : "red";
+        return "<tr><td>" + name + "</td><td style='color:" + color + ";'>" + String.format("%.3f", val) + "</td></tr>";
     }
 
     private void logMetadataTable(TestCase tc, ExtentTest testCaseExtent) {
@@ -227,7 +287,7 @@ public class GovGPTSemanticTest extends TestBase {
     }
 
     private void logLLMTable(Map<String, Object> llmScores, ExtentTest testCaseExtent) {
-        String html = "<b>LLM Scores</b><br>" +
+        String html = "<b>LLM Scores & Additional Metrics</b><br>" +
                 "<table style='border-collapse:collapse;color:black;border:2px solid black;'>" +
                 formatScoreRow("Semantic Similarity", llmScores.getOrDefault("semanticSimilarity", 0.0)) +
                 formatScoreRow("BLEU-4 (smoothed)", llmScores.getOrDefault("bleu4", 0.0)) +
@@ -235,7 +295,13 @@ public class GovGPTSemanticTest extends TestBase {
                 formatScoreRow("F1 Score", llmScores.getOrDefault("f1", 0.0)) +
                 formatScoreRow("Exact Match", llmScores.getOrDefault("exactMatch", 0.0)) +
                 formatScoreRow("Confidence", llmScores.getOrDefault("confidence", 0.0)) +
-                formatScoreRow("Hallucination Risk", llmScores.getOrDefault("hallucinationRisk", 0.0)) +
+                formatScoreRow("Perplexity", llmScores.getOrDefault("perplexity", 0.0)) +
+                formatScoreRow("METEOR", llmScores.getOrDefault("meteor", 0.0)) +
+                formatScoreRow("Contradiction", llmScores.getOrDefault("contradiction", 0.0)) +
+                formatScoreRow("Multi-turn Consistency", llmScores.getOrDefault("multiTurnConsistency", 0.0)) +
+                formatScoreRow("Length Ratio", llmScores.getOrDefault("lengthRatio", 0.0)) +
+                formatScoreRow("Redundancy", llmScores.getOrDefault("redundancy", 0.0)) +
+                formatScoreRow("Diversity", llmScores.getOrDefault("diversity", 0.0)) +
                 formatScoreRow("Final Composite Score", llmScores.getOrDefault("finalScore", 0.0)) +
                 "<tr><td>Model Used</td><td>" + llmScores.getOrDefault("usedModel", "N/A") + "</td></tr>" +
                 "</table><br>";
@@ -246,76 +312,106 @@ public class GovGPTSemanticTest extends TestBase {
                                      double semanticScore, double finalScore, boolean blacklistHit, String notes,
                                      List<JsonObject> accessibilityViolations, List<String> detectedHallucinations,
                                      ExtentTest testCaseExtent) {
+
+        StringBuilder hallucinationsHtml = new StringBuilder();
+        if (detectedHallucinations != null && !detectedHallucinations.isEmpty()) {
+            for (String term : detectedHallucinations) {
+                hallucinationsHtml.append(term).append(", ");
+            }
+            // Remove trailing comma
+            hallucinationsHtml.setLength(hallucinationsHtml.length() - 2);
+        } else {
+            hallucinationsHtml.append("None");
+        }
+
         String html = "<b>Other Evaluations</b><br>" +
                 "<table style='border-collapse:collapse;color:black;border:2px solid black;'>" +
                 "<tr><td>Accessibility Violations</td><td>" + accessibilityViolations.size() + "</td></tr>" +
                 "<tr><td>Blacklist Hit</td><td>" + (blacklistHit ? "<span style='color:red;'>YES</span>" : "NO") + "</td></tr>" +
+                "<tr><td>Detected Hallucinations</td><td>" + hallucinationsHtml + "</td></tr>" +
+                "<tr><td>Semantic Score</td><td>" + String.format("%.3f", semanticScore) + "</td></tr>" +
+                "<tr><td>Final Score</td><td>" + String.format("%.3f", finalScore) + "</td></tr>" +
                 "<tr><td>Start Time</td><td>" + startTime + "</td></tr>" +
                 "<tr><td>End Time</td><td>" + endTime + "</td></tr>" +
                 "<tr><td>Duration</td><td>" + Duration.between(startTime, endTime) + "</td></tr>" +
-                "<tr><td>Notes</td><td>" + notes + "</td></tr>" +
+                "<tr><td>Notes</td><td>" + (notes.isEmpty() ? "None" : notes) + "</td></tr>" +
                 "</table><br>";
+
         testCaseExtent.log(Status.INFO, MarkupHelper.createLabel(html, ExtentColor.TRANSPARENT));
     }
 
-    private String abbreviate(String text, int maxLength) {
-        if (text == null) return "";
-        return text.length() <= maxLength ? text : text.substring(0, maxLength - 3) + "...";
-    }
-
-    private String formatScoreRow(String name, Object value) {
-        double val = value instanceof Number ? ((Number) value).doubleValue() : 0.0;
-        String color = val >= 0.8 ? "green" : val >= 0.5 ? "orange" : "red";
-        return "<tr><td>" + name + "</td><td style='color:" + color + ";'>" + String.format("%.3f", val) + "</td></tr>";
-    }
-
-    // ---------------- Dashboard ----------------
     public void generateSummaryDashboard(List<TestCaseResult> results) throws Exception {
         int total = results.size();
         long passCount = results.stream().filter(r -> r.pass).count();
         long warnCount = results.stream().filter(r -> r.warn).count();
         long failCount = total - passCount - warnCount;
 
-        double avgFinalScore = results.stream().mapToDouble(r -> r.finalScore).average().orElse(0.0);
+        // Average metrics
         double avgSemantic = results.stream().mapToDouble(r -> r.semanticScore).average().orElse(0.0);
         double avgLLMConfidence = results.stream().mapToDouble(r -> r.llmConfidence).average().orElse(0.0);
-        double avgBleu = results.stream().mapToDouble(r -> r.bleu4).average().orElse(0.0);
-        double avgRouge = results.stream().mapToDouble(r -> r.rougeL).average().orElse(0.0);
-        double avgF1 = results.stream().mapToDouble(r -> r.f1Score).average().orElse(0.0);
-        double avgComposite = results.stream().mapToDouble(r -> r.compositeScore).average().orElse(0.0);
+        double avgFinalScore = results.stream().mapToDouble(r -> r.finalScore).average().orElse(0.0);
 
-        String html = "<html><head><title>Chatbot Test Dashboard</title>" +
-                "<script src='https://cdn.jsdelivr.net/npm/chart.js'></script></head><body>" +
-                "<h1>Chatbot Test Summary</h1>" +
-                "<p>Total Tests: " + total + "</p>" +
-                "<p>PASS: " + passCount + " | WARN: " + warnCount + " | FAIL: " + failCount + "</p>" +
-                "<h3>Average Scores</h3><ul>" +
-                "<li>Final Score: " + String.format("%.3f", avgFinalScore) + "</li>" +
-                "<li>Semantic Similarity: " + String.format("%.3f", avgSemantic) + "</li>" +
-                "<li>LLM Confidence: " + String.format("%.3f", avgLLMConfidence) + "</li>" +
-                "<li>BLEU-4: " + String.format("%.3f", avgBleu) + "</li>" +
-                "<li>ROUGE-L: " + String.format("%.3f", avgRouge) + "</li>" +
-                "<li>F1 Score: " + String.format("%.3f", avgF1) + "</li>" +
-                "<li>Composite Score: " + String.format("%.3f", avgComposite) + "</li></ul>" +
+        StringBuilder html = new StringBuilder();
+        html.append("<html><head><title>Chatbot Test Dashboard</title>")
+                .append("<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>")
+                .append("<script src='https://code.jquery.com/jquery-3.7.1.min.js'></script>")
+                .append("<link rel='stylesheet' href='https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css'/>")
+                .append("<script src='https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js'></script>")
+                .append("<style>")
+                .append("body{font-family:Arial,sans-serif;margin:20px;}") // clean font
+                .append("h1,h2{color:#333;}") // header style
+                .append(".green{color:#28a745}.orange{color:#ffc107}.red{color:#dc3545}") // color codes
+                .append("table, th, td {border:1px solid black; border-collapse:collapse; padding:5px; text-align:center;}")
+                .append("th{background-color:#f0f0f0;}")
+                .append("</style>")
+                .append("</head><body>")
+                .append("<h1>Chatbot QA Test Dashboard</h1>")
+                .append("<p>Total Tests: ").append(total).append("</p>")
+                .append("<p><b>PASS:</b> ").append(passCount)
+                .append(" | <b>WARN:</b> ").append(warnCount)
+                .append(" | <b>FAIL:</b> ").append(failCount).append("</p>")
 
-                "<canvas id='summaryChart' width='400' height='200'></canvas>" +
-                "<script>new Chart(document.getElementById('summaryChart'), {type: 'pie', data: {labels: ['PASS','WARN','FAIL'], datasets: [{data: [" +
-                passCount + "," + warnCount + "," + failCount +
-                "], backgroundColor: ['#28a745','#ffc107','#dc3545']} ]}});</script>" +
+                // Charts
+                .append("<div style='width:45%; display:inline-block;'><canvas id='summaryChart'></canvas></div>")
+                .append("<div style='width:50%; display:inline-block;'><canvas id='avgMetricsChart'></canvas></div>")
+                .append("<div style='width:95%; margin-top:30px;'><canvas id='perTestMetricsChart'></canvas></div>")
 
-                "<canvas id='metricsChart' width='600' height='300'></canvas>" +
-                "<script>new Chart(document.getElementById('metricsChart'), {type: 'bar', data: {" +
-                "labels: ['Semantic','BLEU-4','ROUGE-L','F1','Confidence','Composite']," +
-                "datasets: [{label: 'Average Scores', data: [" +
-                String.format("%.3f", avgSemantic) + "," +
-                String.format("%.3f", avgBleu) + "," +
-                String.format("%.3f", avgRouge) + "," +
-                String.format("%.3f", avgF1) + "," +
-                String.format("%.3f", avgLLMConfidence) + "," +
-                String.format("%.3f", avgComposite) +
-                "], backgroundColor: '#007bff'}]}});</script>" +
-                "</body></html>";
+                // Detailed table
+                .append("<h2>Detailed Test Results</h2>")
+                .append("<table id='resultsTable'><thead>")
+                .append("<tr><th>ID</th><th>Bot Answer</th><th>Semantic</th><th>Confidence</th><th>Final Score</th><th>Status</th></tr></thead><tbody>");
 
-        Files.writeString(Paths.get(System.getProperty("user.dir") + "/reports/SummaryDashboard.html"), html);
+        for (TestCaseResult r : results) {
+            String status = r.pass ? "PASS" : r.warn ? "WARN" : "FAIL";
+            html.append("<tr>")
+                    .append("<td>").append(r.testCaseId).append("</td>")
+                    .append("<td title='").append(r.botAnswer.replace("'", "&apos;")).append("'>").append(abbreviate(r.botAnswer, 50)).append("</td>")
+                    .append("<td class='").append(r.semanticScore >= 0.8 ? "green" : r.semanticScore >= 0.5 ? "orange" : "red").append("'>").append(String.format("%.3f", r.semanticScore)).append("</td>")
+                    .append("<td class='").append(r.llmConfidence >= 0.8 ? "green" : r.llmConfidence >= 0.5 ? "orange" : "red").append("'>").append(String.format("%.3f", r.llmConfidence)).append("</td>")
+                    .append("<td>").append(String.format("%.3f", r.finalScore)).append("</td>")
+                    .append("<td>").append(status).append("</td>")
+                    .append("</tr>");
+        }
+
+        html.append("</tbody></table>")
+                .append("<script>")
+                // PASS/WARN/FAIL pie chart
+                .append("new Chart(document.getElementById('summaryChart'), {type:'pie', data:{labels:['PASS','WARN','FAIL'], datasets:[{data:[").append(passCount).append(",").append(warnCount).append(",").append(failCount).append("], backgroundColor:['#28a745','#ffc107','#dc3545']}]}, options:{plugins:{title:{display:true,text:'Overall Test Status'}}}});")
+
+                // Average metrics bar chart
+                .append("new Chart(document.getElementById('avgMetricsChart'), {type:'bar', data:{labels:['Semantic','Confidence','Final'], datasets:[{label:'Average Scores', data:[").append(String.format("%.3f", avgSemantic)).append(",").append(String.format("%.3f", avgLLMConfidence)).append(",").append(String.format("%.3f", avgFinalScore)).append("], backgroundColor:['#007bff','#17a2b8','#ffc107']}]}, options:{plugins:{title:{display:true,text:'Average Metrics'}}}});")
+
+                // Per-test metrics stacked bar chart
+                .append("const perTestLabels=[").append(results.stream().map(r -> "'" + r.testCaseId + "'").collect(Collectors.joining(","))).append("];")
+                .append("const semanticData=[").append(results.stream().map(r -> String.format("%.3f", r.semanticScore)).collect(Collectors.joining(","))).append("];")
+                .append("const confidenceData=[").append(results.stream().map(r -> String.format("%.3f", r.llmConfidence)).collect(Collectors.joining(","))).append("];")
+                .append("const finalData=[").append(results.stream().map(r -> String.format("%.3f", r.finalScore)).collect(Collectors.joining(","))).append("];")
+                .append("new Chart(document.getElementById('perTestMetricsChart'), {type:'bar', data:{labels:perTestLabels, datasets:[{label:'Semantic', data:semanticData, backgroundColor:'#28a745'},{label:'Confidence', data:confidenceData, backgroundColor:'#17a2b8'},{label:'Final', data:finalData, backgroundColor:'#ffc107'}]}, options:{plugins:{title:{display:true,text:'Per-Test Metrics Comparison'}}, responsive:true, scales:{y:{beginAtZero:true, max:1}}}});")
+
+                // DataTable initialization
+                .append("$(document).ready(function(){$('#resultsTable').DataTable({pageLength:10, scrollX:true});});")
+                .append("</script></body></html>");
+
+        Files.writeString(Paths.get(System.getProperty("user.dir") + "/reports/SummaryDashboard.html"), html.toString());
     }
 }
